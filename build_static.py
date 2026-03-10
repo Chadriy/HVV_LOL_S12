@@ -503,8 +503,12 @@ def agg_team_ban_champions(ban_df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+import re
+
 def safe_file_stem(s: str) -> str:
-    return quote(str(s), safe="")
+    s = str(s)
+    s = re.sub(r'[^a-zA-Z0-9\u4e00-\u9fa5]+', "_", s)
+    return s.strip("_")
 
 
 def player_path(name: str) -> str:
