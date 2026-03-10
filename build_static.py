@@ -688,7 +688,7 @@ BASE_HTML = r"""
 <body>  
 <nav class="navbar navbar-expand-lg navbar-dark">  
   <div class="container-fluid px-4">  
-    <a class="navbar-brand" href="{{ link_index }}">HVV杯 S12 比赛统计</a>  
+    <a class="navbar-brand" href="{{ link_index }}">HVV杯英雄联盟S12赛季比赛数据总览</a>  
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">  
       <span class="navbar-toggler-icon"></span>  
     </button>  
