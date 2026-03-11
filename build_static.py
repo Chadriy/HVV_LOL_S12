@@ -694,7 +694,8 @@ BASE_HTML = r"""
     </button>  
     <div class="collapse navbar-collapse" id="topNav">  
       <div class="navbar-nav ms-auto">  
-        <a class="nav-link {% if active=='players' %}active{% endif %}" href="{{ link_players }}">选手数据</a>  
+        <a class="nav-link {% if active=='daily' %}active{% endif %}" href="{{ link_index }}">赛事情况</a>
+        <a class="nav-link {% if active=='players' %}active{% endif %}" href="{{ link_players }}">选手数据</a>
         <a class="nav-link {% if active=='champions' %}active{% endif %}" href="{{ link_champions }}">英雄数据</a>  
         <a class="nav-link {% if active=='teams' %}active{% endif %}" href="{{ link_teams }}">队伍榜</a>  
         <a class="nav-link {% if active=='bans' %}active{% endif %}" href="{{ link_bans }}">Ban榜</a>  
@@ -847,7 +848,225 @@ class StaticSiteBuilder:
                 .set_index("match_id")["match_ord"]
                 .to_dict()
             )
+    def build_daily_results(self):
 
+        if self.team_match_stats.empty:
+            return
+
+        df = self.team_match_stats.copy()
+
+        df["date"] = df["match_date"]
+        df["team"] = df["team_name"]
+        df["opponent"] = df["opponent"]
+        df["win"] = df["win"].astype(int)
+
+        rows = []
+
+        for match_id, g in df.groupby("match_id"):
+
+            if len(g) != 2:
+                continue
+
+            t1 = g.iloc[0]
+            t2 = g.iloc[1]
+
+            date = t1["date"]
+            teamA = str(t1["team"])
+            teamB = str(t2["team"])
+
+            winner = teamA if t1["win"] else teamB
+
+            pair = tuple(sorted([teamA, teamB]))
+
+            rows.append({
+                "date": date,
+                "teamA": pair[0],
+                "teamB": pair[1],
+                "winner": winner
+            })
+
+        rdf = pd.DataFrame(rows)
+
+        if rdf.empty:
+            return
+
+        result_rows = []
+
+        for (date, teamA, teamB), g in rdf.groupby(["date", "teamA", "teamB"]):
+
+            winsA = (g["winner"] == teamA).sum()
+            winsB = (g["winner"] == teamB).sum()
+
+            if winsA >= winsB:
+                top = teamA
+                bottom = teamB
+                top_wins = winsA
+                bottom_wins = winsB
+            else:
+                top = teamB
+                bottom = teamA
+                top_wins = winsB
+                bottom_wins = winsA
+
+            total_games = top_wins + bottom_wins
+
+            result_rows.append({
+                "date": date,
+                "top": top,
+                "bottom": bottom,
+                "top_wins": top_wins,
+                "bottom_wins": bottom_wins,
+                "games": total_games
+            })
+
+        result_df = pd.DataFrame(result_rows)
+        result_df = result_df.sort_values(["date"], ascending=False)
+
+        def build_circles(win, total):
+
+            circles = ""
+
+            for i in range(total):
+                if i < win:
+                    circles += '<span class="circle win"></span>'
+                else:
+                    circles += '<span class="circle lose"></span>'
+
+            return circles
+
+        day_blocks = []
+
+        for date, g in result_df.groupby("date"):
+
+            matches_html = ""
+
+            for _, r in g.iterrows():
+
+                top_circles = build_circles(r["top_wins"], r["games"])
+                bottom_circles = build_circles(r["bottom_wins"], r["games"])
+
+                matches_html += f"""
+                <div class="series-card">
+
+                    <div class="team-row win-team">
+                        <div class="team-name">{html_escape(r['top'])}</div>
+                        <div class="circles">{top_circles}</div>
+                        <div class="score">{r['top_wins']}</div>
+                    </div>
+
+                    <div class="team-row lose-team">
+                        <div class="team-name">{html_escape(r['bottom'])}</div>
+                        <div class="circles">{bottom_circles}</div>
+                        <div class="score">{r['bottom_wins']}</div>
+                    </div>
+
+                </div>
+                """
+
+            day_blocks.append(f"""
+            <div class="day-block">
+
+                <div class="day-title">{date}</div>
+
+                {matches_html}
+
+            </div>
+            """)
+
+        content = f"""
+
+    <style>
+
+    .day-block {{
+        margin-bottom:40px;
+    }}
+
+    .day-title {{
+        font-size:26px;
+        font-weight:800;
+        margin-bottom:18px;
+        color:#60a5fa;
+    }}
+
+    .series-card {{
+        background:#020617;
+        border-radius:16px;
+        padding:18px 24px;
+        margin-bottom:16px;
+        box-shadow:0 12px 24px rgba(0,0,0,0.35);
+    }}
+
+    .team-row {{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin:8px 0;
+    }}
+
+    .team-name {{
+        width:35%;
+        font-size:18px;
+        font-weight:700;
+    }}
+
+    .circles {{
+        width:45%;
+    }}
+
+    .score {{
+        width:20%;
+        text-align:right;
+        font-size:24px;
+        font-weight:900;
+        color:#facc15;
+    }}
+
+    .circle {{
+        display:inline-block;
+        width:12px;
+        height:12px;
+        border-radius:50%;
+        margin-right:6px;
+    }}
+
+    .circle.win {{
+        background:#22c55e;
+    }}
+
+    .circle.lose {{
+        background:#334155;
+    }}
+
+    .win-team .team-name {{
+        color:#f8fafc;
+    }}
+
+    .lose-team .team-name {{
+        color:#94a3b8;
+    }}
+
+    </style>
+
+    {''.join(day_blocks)}
+
+    """
+
+        html = self.render_page(
+            current_dir="",
+            title="赛事赛程",
+            active="daily",
+            page_desc="每日系列赛比分",
+            summary_cards=[
+                {"label": "比赛日", "value": result_df["date"].nunique()},
+                {"label": "系列赛", "value": len(result_df)},
+                {"label": "总对局", "value": self.total_matches},
+            ],
+            tabs=False,
+            content=content
+        )
+
+        self.write_file("index.html", html)
+        self.write_file("daily.html", html)
     def write_file(self, rel_path: str, content: str):
         fp = os.path.join(self.out_dir, *rel_path.split("/"))
         os.makedirs(os.path.dirname(fp), exist_ok=True)
@@ -1576,20 +1795,28 @@ class StaticSiteBuilder:
             self.write_file(match_path(match_id), html)
 
     def build_all(self):
+
         os.makedirs(self.out_dir, exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, "player"), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, "team"), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, "champion"), exist_ok=True)
         os.makedirs(os.path.join(self.out_dir, "match"), exist_ok=True)
 
+        # 先生成所有页面
         self.build_players_page()
         self.build_player_detail_pages()
+
         self.build_champions_page()
         self.build_champion_detail_pages()
+
         self.build_teams_page()
         self.build_team_detail_pages()
+
         self.build_bans_page()
         self.build_match_detail_pages()
+
+        # 最后生成每日战绩（覆盖 index.html）
+        self.build_daily_results()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
