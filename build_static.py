@@ -1031,41 +1031,27 @@ class StaticSiteBuilder:
             winsB = (g["winner"] == teamB).sum()
 
             if winsA >= winsB:
-                top = teamA
-                bottom = teamB
-                top_wins = winsA
-                bottom_wins = winsB
+                left = teamA
+                right = teamB
+                left_wins = winsA
+                right_wins = winsB
             else:
-                top = teamB
-                bottom = teamA
-                top_wins = winsB
-                bottom_wins = winsA
-
-            total_games = top_wins + bottom_wins
+                left = teamB
+                right = teamA
+                left_wins = winsB
+                right_wins = winsA
 
             result_rows.append({
                 "date": date,
-                "top": top,
-                "bottom": bottom,
-                "top_wins": top_wins,
-                "bottom_wins": bottom_wins,
-                "games": total_games
+                "left": left,
+                "right": right,
+                "left_wins": left_wins,
+                "right_wins": right_wins
             })
 
         result_df = pd.DataFrame(result_rows)
+
         result_df = result_df.sort_values(["date"], ascending=False)
-
-        def build_circles(win, total):
-
-            circles = ""
-
-            for i in range(total):
-                if i < win:
-                    circles += '<span class="circle win"></span>'
-                else:
-                    circles += '<span class="circle lose"></span>'
-
-            return circles
 
         day_blocks = []
 
@@ -1075,33 +1061,36 @@ class StaticSiteBuilder:
 
             for _, r in g.iterrows():
 
-                top_circles = build_circles(r["top_wins"], r["games"])
-                bottom_circles = build_circles(r["bottom_wins"], r["games"])
-
                 matches_html += f"""
-                <div class="series-card">
+                <div class="match-card">
 
-                    <div class="team-row win-team">
-                        <div class="team-name">{html_escape(r['top'])}</div>
-                        <div class="circles">{top_circles}</div>
-                        <div class="score">{r['top_wins']}</div>
+                    <div class="team team-left">
+                        {html_escape(r["left"])}
                     </div>
 
-                    <div class="team-row lose-team">
-                        <div class="team-name">{html_escape(r['bottom'])}</div>
-                        <div class="circles">{bottom_circles}</div>
-                        <div class="score">{r['bottom_wins']}</div>
+                    <div class="match-score">
+                        <span class="score-left">{r["left_wins"]}</span>
+                        <span class="score-divider">:</span>
+                        <span class="score-right">{r["right_wins"]}</span>
+                    </div>
+
+                    <div class="team team-right">
+                        {html_escape(r["right"])}
                     </div>
 
                 </div>
                 """
 
             day_blocks.append(f"""
-            <div class="day-block">
+            <div class="match-day">
 
-                <div class="day-title">{date}</div>
+                <div class="match-day-title">
+                    {date}
+                </div>
 
-                {matches_html}
+                <div class="match-grid">
+                    {matches_html}
+                </div>
 
             </div>
             """)
@@ -1110,72 +1099,70 @@ class StaticSiteBuilder:
 
     <style>
 
-    .day-block {{
-        margin-bottom:40px;
+    .match-day {{
+        margin-bottom:50px;
     }}
 
-    .day-title {{
-        font-size:26px;
+    .match-day-title {{
+        font-size:28px;
         font-weight:800;
         margin-bottom:18px;
         color:#60a5fa;
     }}
 
-    .series-card {{
-        background:#020617;
-        border-radius:16px;
-        padding:18px 24px;
-        margin-bottom:16px;
-        box-shadow:0 12px 24px rgba(0,0,0,0.35);
+    .match-grid {{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:18px;
     }}
 
-    .team-row {{
+    .match-card {{
+        background:#020617;
+        border-radius:14px;
+        padding:18px 24px;
         display:flex;
         align-items:center;
         justify-content:space-between;
-        margin:8px 0;
+        box-shadow:0 10px 22px rgba(0,0,0,0.35);
+        transition:all 0.2s;
     }}
 
-    .team-name {{
-        width:35%;
+    .match-card:hover {{
+        transform:translateY(-2px);
+    }}
+
+    .team {{
         font-size:18px;
         font-weight:700;
+        width:35%;
+        color:#e2e8f0;
     }}
 
-    .circles {{
-        width:45%;
+    .team-left {{
+        text-align:left;
     }}
 
-    .score {{
-        width:20%;
+    .team-right {{
         text-align:right;
-        font-size:24px;
+    }}
+
+    .match-score {{
+        font-size:28px;
         font-weight:900;
         color:#facc15;
+        letter-spacing:3px;
     }}
 
-    .circle {{
-        display:inline-block;
-        width:12px;
-        height:12px;
-        border-radius:50%;
-        margin-right:6px;
+    .score-divider {{
+        margin:0 4px;
     }}
 
-    .circle.win {{
-        background:#22c55e;
+    @media (max-width:900px) {{
+
+    .match-grid {{
+        grid-template-columns:1fr;
     }}
 
-    .circle.lose {{
-        background:#334155;
-    }}
-
-    .win-team .team-name {{
-        color:#f8fafc;
-    }}
-
-    .lose-team .team-name {{
-        color:#94a3b8;
     }}
 
     </style>
@@ -1186,9 +1173,9 @@ class StaticSiteBuilder:
 
         html = self.render_page(
             current_dir="",
-            title="赛事赛程",
-            active="daily",
-            page_desc="每日系列赛比分",
+            title="赛事情况",
+            active="index",
+            page_desc="每日系列赛比分统计",
             summary_cards=[
                 {"label": "比赛日", "value": result_df["date"].nunique()},
                 {"label": "系列赛", "value": len(result_df)},
@@ -1266,17 +1253,19 @@ class StaticSiteBuilder:
 
     def build_players_page(self):
         current_dir = ""
-        _, player_link, _, _ = self.build_linkers(current_dir)
+        team_link, player_link, _, _ = self.build_linkers(current_dir)
 
         tables = {}
         counts = {}
         pdf = self.players_df.copy()
+
         if not pdf.empty:
             pdf["team"] = pdf["player"].map(self.player_team_map)
             pdf["rank"] = pdf["player"].map(self.player_rank_map)
         if not pdf.empty:
             pdf["player_link"] = pdf["player"].map(player_link)
-
+        if not pdf.empty:
+            pdf["team_link"] = pdf["team"].map(team_link)
         for lane in LANES:
             dff = pdf[pdf["lane"] == lane] if not pdf.empty else pdf
             counts[lane] = len(dff)
@@ -1284,7 +1273,7 @@ class StaticSiteBuilder:
                 dff,
                 columns=[
                     "player_link",
-                    "team",
+                    "team_link",
                     "rank",
                     "games",
                     "wins",
@@ -1297,7 +1286,7 @@ class StaticSiteBuilder:
                 ],
                 col_rename={
                     "player_link": "选手",
-                    "team": "队伍",
+                    "team_link": "队伍",
                     "rank": "历史最高段位",
                     "games": "总场次",
                     "wins": "胜场",
