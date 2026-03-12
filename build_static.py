@@ -602,7 +602,22 @@ def df_to_table(df: pd.DataFrame, columns: List[str], col_rename: Dict[str, str]
         na_rep="-",
     )
 
+def format_date_cn(date_str):
 
+    if not date_str:
+        return "-"
+
+    s = str(date_str)
+
+    if len(s) != 8 or not s.isdigit():
+        return s
+
+    y = int(s[0:4])
+    m = int(s[4:6])
+    d = int(s[6:8])
+
+    return f"{y}年{m}月{d}日"
+    
 def fmt_num(x, digits=2, suffix=""):
     if x is None:
         return "-"
@@ -1051,14 +1066,19 @@ class StaticSiteBuilder:
 
         result_df = pd.DataFrame(result_rows)
 
-        result_df = result_df.sort_values(["date"], ascending=False)
+        result_df["date_sort"] = pd.to_numeric(result_df["date"], errors="coerce")
+
+        result_df = result_df.sort_values("date_sort", ascending=False)
+
+        result_df = result_df.drop(columns=["date_sort"])
 
         day_blocks = []
 
-        for date, g in result_df.groupby("date"):
+        for date, g in result_df.groupby("date", sort=False):
 
             matches_html = ""
-
+            date_cn = format_date_cn(date)
+            
             for _, r in g.iterrows():
 
                 matches_html += f"""
@@ -1085,7 +1105,7 @@ class StaticSiteBuilder:
             <div class="match-day">
 
                 <div class="match-day-title">
-                    {date}
+                    {date_cn}
                 </div>
 
                 <div class="match-grid">
