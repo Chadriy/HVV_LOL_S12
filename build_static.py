@@ -25,9 +25,66 @@ import posixpath
 from html import escape as html_escape
 from urllib.parse import quote
 from typing import Any, Dict, List, Optional, Tuple
-
+from query_rank import query_player, recent6_highest_rank
 import pandas as pd
 from jinja2 import Template
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+RANK_CACHE_FILE = "rank_cache.json"
+
+def load_rank_cache():
+    if os.path.exists(RANK_CACHE_FILE):
+        try:
+            with open(RANK_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def save_rank_cache(cache):
+    with open(RANK_CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=2)
+
+import time
+import random
+
+def fetch_player_rank(game_id, cache, retry=3):
+
+    if not game_id:
+        return "-"
+
+    if game_id in cache:
+        return cache[game_id]
+
+    for i in range(retry):
+
+        try:
+
+            # 每次请求间隔，防止接口限流
+            time.sleep(random.uniform(0.4, 0.8))
+
+            data = query_player(game_id)
+
+            if not data or "battleInfo" not in data:
+                raise RuntimeError("API返回异常")
+
+            rank = recent6_highest_rank(data)
+
+            if not rank:
+                rank = "-"
+
+            cache[game_id] = rank
+            return rank
+
+        except Exception as e:
+
+            if i == retry - 1:
+                print(f"段位查询失败 {game_id}: {e}")
+                return "-"
+
+            # 重试等待
+            time.sleep(1 + random.random())
 
 LANE_MAP = {
     "TOP": "上",
@@ -338,7 +395,7 @@ def agg_players(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
 
-    g = df.groupby(["lane", "player"], dropna=False)
+    g = df.groupby(["lane", "player", "team_name"], dropna=False)
     out = g.agg(
         games=("win", "count"),
         wins=("win", "sum"),
@@ -819,6 +876,82 @@ class StaticSiteBuilder:
         self.match_meta = build_match_meta(self.matches)
 
         self.df_detail = extract_rows(self.matches, champ_map=self.champ_map, match_meta=self.match_meta)
+        # -----------------------------
+        # 校验：选手只能属于一个队伍
+        # -----------------------------
+        if not self.df_detail.empty:
+
+            conflict_players = {}
+
+            for player, g in self.df_detail.groupby("player"):
+                teams = set(g["team_name"].dropna().astype(str))
+
+                if len(teams) > 1:
+
+                    files = set()
+
+                    for mid in g["match_id"]:
+                        meta = self.match_meta.get(str(mid)) or {}
+                        src = meta.get("src_file")
+                        if src:
+                            files.add(os.path.basename(src))
+
+                    conflict_players[player] = {
+                        "teams": list(teams),
+                        "files": sorted(files)
+                    }
+
+            if conflict_players:
+
+                print("\n错误：检测到选手属于多个队伍\n")
+
+                for player, info in conflict_players.items():
+
+                    print(f"选手: {player}")
+                    print(f"队伍: {', '.join(info['teams'])}")
+
+                    print("涉及文件:")
+                    for f in info["files"]:
+                        print("  ", f)
+
+                    print()
+
+                raise RuntimeError("选手队伍不唯一，请修复数据后重新生成静态页面")
+
+        # -----------------------------
+        # 建立 player -> team 映射
+        # -----------------------------
+        self.player_team_map = (
+            self.df_detail.groupby("player")["team_name"]
+            .first()
+            .to_dict()
+        )
+
+        # -----------------------------
+        # 查询选手段位
+        # -----------------------------
+        self.rank_cache = load_rank_cache()
+
+        self.player_rank_map = {}
+
+        players = self.df_detail["player"].dropna().unique().tolist()
+
+        need_query = [p for p in players if p not in self.rank_cache]
+
+        print(f"段位查询：缓存 {len(players) - len(need_query)} 人，需要查询 {len(need_query)} 人")
+
+        for player in need_query:
+
+            game_id = player
+
+            rank = fetch_player_rank(game_id, self.rank_cache)
+
+            self.rank_cache[player] = rank
+
+        for p in players:
+            self.player_rank_map[p] = self.rank_cache.get(p, "-")
+
+        save_rank_cache(self.rank_cache)
         self.players_df = agg_players(self.df_detail)
         self.champs_df = agg_champions(self.df_detail)
         self.team_match_stats = build_team_match_stats(self.df_detail)
@@ -1139,6 +1272,9 @@ class StaticSiteBuilder:
         counts = {}
         pdf = self.players_df.copy()
         if not pdf.empty:
+            pdf["team"] = pdf["player"].map(self.player_team_map)
+            pdf["rank"] = pdf["player"].map(self.player_rank_map)
+        if not pdf.empty:
             pdf["player_link"] = pdf["player"].map(player_link)
 
         for lane in LANES:
@@ -1146,9 +1282,23 @@ class StaticSiteBuilder:
             counts[lane] = len(dff)
             tables[lane] = df_to_table(
                 dff,
-                columns=["player_link", "games", "wins", "winrate", "avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"],
+                columns=[
+                    "player_link",
+                    "team",
+                    "rank",
+                    "games",
+                    "wins",
+                    "winrate",
+                    "avg_score",
+                    "avg_kda",
+                    "avg_kp",
+                    "avg_gold_diff",
+                    "avg_level_diff"
+                ],
                 col_rename={
                     "player_link": "选手",
+                    "team": "队伍",
+                    "rank": "历史最高段位",
                     "games": "总场次",
                     "wins": "胜场",
                     "winrate": "胜率(%)",
