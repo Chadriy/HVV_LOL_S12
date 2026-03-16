@@ -61,15 +61,16 @@ def fetch_player_rank(game_id, cache, retry=3):
 
         try:
 
-            # 每次请求间隔，防止接口限流
-            time.sleep(random.uniform(0.4, 0.8))
-
-            data = query_player(game_id)
-
-            if not data or "battleInfo" not in data:
-                raise RuntimeError("API返回异常")
-
-            rank = recent6_highest_rank(data)
+            # # 每次请求间隔，防止接口限流
+            # time.sleep(random.uniform(0.4, 0.8))
+            #
+            # data = query_player(game_id)
+            #
+            # if not data or "battleInfo" not in data:
+            #     raise RuntimeError("API返回异常")
+            #
+            # rank = recent6_highest_rank(data)
+            rank = None
 
             if not rank:
                 rank = "-"
@@ -996,6 +997,7 @@ class StaticSiteBuilder:
                 .set_index("match_id")["match_ord"]
                 .to_dict()
             )
+
     def build_daily_results(self):
 
         if self.team_match_stats.empty:
@@ -1067,10 +1069,138 @@ class StaticSiteBuilder:
         result_df = pd.DataFrame(result_rows)
 
         result_df["date_sort"] = pd.to_numeric(result_df["date"], errors="coerce")
-
         result_df = result_df.sort_values("date_sort", ascending=False)
-
         result_df = result_df.drop(columns=["date_sort"])
+
+        groups = {}
+        team_to_group = {}
+
+        current_group = None
+
+        with open("team_group_info.txt", encoding="utf-8") as f:
+
+            for line in f:
+
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                if line.startswith("【") and line.endswith("】"):
+
+                    current_group = line[1:-1]
+                    groups[current_group] = []
+
+                else:
+
+                    groups[current_group].append(line)
+                    team_to_group[line] = current_group
+
+        team_stats = {}
+
+        for team in team_to_group:
+            team_stats[team] = {
+                "team": team,
+                "group": team_to_group[team],
+                "points": 0,
+                "win": 0,
+                "lose": 0
+            }
+
+        for _, r in result_df.iterrows():
+
+            left = r["left"]
+            right = r["right"]
+
+            lw = int(r["left_wins"])
+            rw = int(r["right_wins"])
+
+            if left in team_stats:
+                team_stats[left]["win"] += lw
+                team_stats[left]["lose"] += rw
+
+            if right in team_stats:
+                team_stats[right]["win"] += rw
+                team_stats[right]["lose"] += lw
+
+            if lw > rw:
+                if left in team_stats:
+                    team_stats[left]["points"] += 1
+            else:
+                if right in team_stats:
+                    team_stats[right]["points"] += 1
+
+        for t in team_stats.values():
+            t["diff"] = t["win"] - t["lose"]
+
+        group_tables = []
+
+        for gname, teams in groups.items():
+
+            rows = [team_stats[t] for t in teams if t in team_stats]
+
+            rows = sorted(
+                rows,
+                key=lambda x: (x["points"], x["diff"]),
+                reverse=True
+            )
+
+            html_rows = ""
+            rank = 1
+
+            for r in rows:
+
+                cls = ""
+                if rank <= 4:
+                    cls = "rank-highlight"
+                if rank == 1:
+                    cls = "rank-first"
+
+                html_rows += f"""
+                <tr class="{cls}">
+                    <td>{rank}</td>
+                    <td class="team-col">{html_escape(r["team"])}</td>
+                    <td>{r["points"]}</td>
+                    <td>{r["win"]}</td>
+                    <td>{r["lose"]}</td>
+                    <td>{r["diff"]}</td>
+                </tr>
+                """
+
+                rank += 1
+
+            group_tables.append(f"""
+            <div class="group-table">
+
+                <div class="group-title">{gname}</div>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th class="team-head">队伍</th>
+                            <th>积分</th>
+                            <th>小局胜</th>
+                            <th>小局负</th>
+                            <th>净胜</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {html_rows}
+                    </tbody>
+
+                </table>
+
+            </div>
+            """)
+
+        group_html = f"""
+        <div class="group-container">
+            {''.join(group_tables)}
+        </div>
+        """
 
         day_blocks = []
 
@@ -1078,9 +1208,8 @@ class StaticSiteBuilder:
 
             matches_html = ""
             date_cn = format_date_cn(date)
-            
-            for _, r in g.iterrows():
 
+            for _, r in g.iterrows():
                 matches_html += f"""
                 <div class="match-card">
 
@@ -1089,9 +1218,9 @@ class StaticSiteBuilder:
                     </div>
 
                     <div class="match-score">
-                        <span class="score-left">{r["left_wins"]}</span>
-                        <span class="score-divider">:</span>
-                        <span class="score-right">{r["right_wins"]}</span>
+                        <span>{r["left_wins"]}</span>
+                        :
+                        <span>{r["right_wins"]}</span>
                     </div>
 
                     <div class="team team-right">
@@ -1119,6 +1248,63 @@ class StaticSiteBuilder:
 
     <style>
 
+    .group-container {{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:30px;
+        margin-bottom:50px;
+    }}
+
+    .group-table {{
+        background:#020617;
+        border-radius:14px;
+        padding:20px;
+    }}
+
+    .group-title {{
+        font-size:22px;
+        font-weight:800;
+        margin-bottom:12px;
+        color:#38bdf8;
+    }}
+
+    .group-table table {{
+        width:100%;
+        border-collapse:collapse;
+    }}
+
+    .group-table th {{
+        color:#94a3b8;
+        font-size:14px;
+        padding:10px;
+        text-align:center;
+    }}
+
+    .team-head {{
+        text-align:left;
+    }}
+
+    .group-table td {{
+        color:#e2e8f0;
+        padding:10px;
+        text-align:center;
+    }}
+
+    .team-col {{
+        text-align:left;
+        font-weight:600;
+    }}
+
+    .rank-highlight {{
+        background:#0f172a;
+        border-left:4px solid #38bdf8;
+    }}
+
+    .rank-first {{
+        background:#1e293b;
+        border-left:4px solid #facc15;
+    }}
+
     .match-day {{
         margin-bottom:50px;
     }}
@@ -1132,7 +1318,7 @@ class StaticSiteBuilder:
 
     .match-grid {{
         display:grid;
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:1fr 1fr 1fr;
         gap:18px;
     }}
 
@@ -1144,11 +1330,6 @@ class StaticSiteBuilder:
         align-items:center;
         justify-content:space-between;
         box-shadow:0 10px 22px rgba(0,0,0,0.35);
-        transition:all 0.2s;
-    }}
-
-    .match-card:hover {{
-        transform:translateY(-2px);
     }}
 
     .team {{
@@ -1167,14 +1348,9 @@ class StaticSiteBuilder:
     }}
 
     .match-score {{
-        font-size:28px;
+        font-size:26px;
         font-weight:900;
         color:#facc15;
-        letter-spacing:3px;
-    }}
-
-    .score-divider {{
-        margin:0 4px;
     }}
 
     @media (max-width:900px) {{
@@ -1183,9 +1359,15 @@ class StaticSiteBuilder:
         grid-template-columns:1fr;
     }}
 
+    .group-container {{
+        grid-template-columns:1fr;
+    }}
+
     }}
 
     </style>
+
+    {group_html}
 
     {''.join(day_blocks)}
 
