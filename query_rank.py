@@ -142,9 +142,9 @@ def query_player(game_id):
     prepared = session.prepare_request(req)
 
     # 这里就是打印可直接访问的完整 URL
-    print("\n可直接访问的 URL：\n")
-    print(prepared.url)
-    print()
+    # print("\n可直接访问的 URL：\n")
+    # print(prepared.url)
+    # print()
 
     resp = session.send(prepared, timeout=10)
     return resp.json()

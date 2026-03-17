@@ -61,17 +61,16 @@ def fetch_player_rank(game_id, cache, retry=3):
 
         try:
 
-            # # 每次请求间隔，防止接口限流
-            # time.sleep(random.uniform(0.4, 0.8))
-            #
-            # data = query_player(game_id)
-            #
-            # if not data or "battleInfo" not in data:
-            #     raise RuntimeError("API返回异常")
-            #
-            # rank = recent6_highest_rank(data)
-            rank = None
+            # 每次请求间隔，防止接口限流
+            time.sleep(random.uniform(0.4, 0.8))
 
+            data = query_player(game_id)
+
+            if not data or "battleInfo" not in data:
+                raise RuntimeError("API返回异常")
+
+            rank = recent6_highest_rank(data)
+            print(rank)
             if not rank:
                 rank = "-"
 
