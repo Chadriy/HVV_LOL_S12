@@ -1009,6 +1009,11 @@ class StaticSiteBuilder:
         df["opponent"] = df["opponent"]
         df["win"] = df["win"].astype(int)
 
+        # ✅ 铭牌配置（只影响积分榜）
+        team_badges = {
+            "麒麟队": "最快完赛"
+        }
+
         rows = []
 
         for match_id, g in df.groupby("match_id"):
@@ -1158,7 +1163,10 @@ class StaticSiteBuilder:
                 html_rows += f"""
                 <tr class="{cls}">
                     <td>{rank}</td>
-                    <td class="team-col">{html_escape(r["team"])}</td>
+                    <td class="team-col">
+                        {html_escape(r["team"])}
+                        {f'<span class="team-badge">{team_badges[r["team"]]}</span>' if r["team"] in team_badges else ''}
+                    </td>
                     <td>{r["points"]}</td>
                     <td>{r["win"]}</td>
                     <td>{r["lose"]}</td>
@@ -1245,132 +1253,143 @@ class StaticSiteBuilder:
 
         content = f"""
 
-    <style>
+        <style>
 
-    .group-container {{
-        display:grid;
-        grid-template-columns:repeat(4,1fr);
-        gap:30px;
-        margin-bottom:50px;
-    }}
+        .team-badge {{
+            display:inline-block;
+            margin-left:6px;
+            padding:1px 6px;
+            font-size:11px;
+            font-weight:700;
+            color:#0f172a;
+            background:#facc15;
+            border-radius:6px;
+        }}
 
-    .group-table {{
-        background:#020617;
-        border-radius:14px;
-        padding:20px;
-    }}
+        .group-container {{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:30px;
+            margin-bottom:50px;
+        }}
 
-    .group-title {{
-        font-size:22px;
-        font-weight:800;
-        margin-bottom:12px;
-        color:#38bdf8;
-    }}
+        .group-table {{
+            background:#020617;
+            border-radius:14px;
+            padding:20px;
+        }}
 
-    .group-table table {{
-        width:100%;
-        border-collapse:collapse;
-    }}
+        .group-title {{
+            font-size:22px;
+            font-weight:800;
+            margin-bottom:12px;
+            color:#38bdf8;
+        }}
 
-    .group-table th {{
-        color:#94a3b8;
-        font-size:14px;
-        padding:10px;
-        text-align:center;
-    }}
+        .group-table table {{
+            width:100%;
+            border-collapse:collapse;
+        }}
 
-    .team-head {{
-        text-align:left;
-    }}
+        .group-table th {{
+            color:#94a3b8;
+            font-size:14px;
+            padding:10px;
+            text-align:center;
+        }}
 
-    .group-table td {{
-        color:#e2e8f0;
-        padding:10px;
-        text-align:center;
-    }}
+        .team-head {{
+            text-align:left;
+        }}
 
-    .team-col {{
-        text-align:left;
-        font-weight:600;
-    }}
+        .group-table td {{
+            color:#e2e8f0;
+            padding:10px;
+            text-align:center;
+        }}
 
-    .rank-highlight {{
-        background:#0f172a;
-        border-left:4px solid #38bdf8;
-    }}
+        .team-col {{
+            text-align:left;
+            font-weight:600;
+        }}
 
-    .rank-first {{
-        background:#1e293b;
-        border-left:4px solid #facc15;
-    }}
+        .rank-highlight {{
+            background:#0f172a;
+            border-left:4px solid #38bdf8;
+        }}
 
-    .match-day {{
-        margin-bottom:50px;
-    }}
+        .rank-first {{
+            background:#1e293b;
+            border-left:4px solid #facc15;
+        }}
 
-    .match-day-title {{
-        font-size:28px;
-        font-weight:800;
-        margin-bottom:18px;
-        color:#60a5fa;
-    }}
+        .match-day {{
+            margin-bottom:50px;
+        }}
 
-    .match-grid {{
-        display:grid;
-        grid-template-columns:1fr 1fr 1fr;
-        gap:18px;
-    }}
+        .match-day-title {{
+            font-size:28px;
+            font-weight:800;
+            margin-bottom:18px;
+            color:#60a5fa;
+        }}
 
-    .match-card {{
-        background:#020617;
-        border-radius:14px;
-        padding:18px 24px;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        box-shadow:0 10px 22px rgba(0,0,0,0.35);
-    }}
+        .match-grid {{
+            display:grid;
+            grid-template-columns:1fr 1fr 1fr;
+            gap:18px;
+        }}
 
-    .team {{
-        font-size:18px;
-        font-weight:700;
-        width:35%;
-        color:#e2e8f0;
-    }}
+        .match-card {{
+            background:#020617;
+            border-radius:14px;
+            padding:18px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            box-shadow:0 10px 22px rgba(0,0,0,0.35);
+        }}
 
-    .team-left {{
-        text-align:left;
-    }}
+        .team {{
+            font-size:18px;
+            font-weight:700;
+            width:35%;
+            color:#e2e8f0;
+        }}
 
-    .team-right {{
-        text-align:right;
-    }}
+        .team-left {{
+            text-align:left;
+        }}
 
-    .match-score {{
-        font-size:26px;
-        font-weight:900;
-        color:#facc15;
-    }}
+        .team-right {{
+            text-align:right;
+        }}
 
-    @media (max-width:900px) {{
+        .match-score {{
+            font-size:26px;
+            font-weight:900;
+            color:#facc15;
+        }}
 
-    .match-grid {{
-        grid-template-columns:1fr;
-    }}
+        @media (max-width:900px) {{
 
-    .group-container {{
-        grid-template-columns:1fr;
-    }}
+        .match-grid {{
+            grid-template-columns:1fr;
+        }}
 
-    }}
+        .group-container {{
+            grid-template-columns:1fr;
+        }}
 
-    </style>
+        }}
 
-    {group_html}
+        </style>
 
-    {''.join(day_blocks)}
+        {group_html}
 
-    """
+        {''.join(day_blocks)}
+
+        """
 
         html = self.render_page(
             current_dir="",

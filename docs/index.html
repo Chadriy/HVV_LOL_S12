@@ -134,128 +134,139 @@
     
     
 
-    <style>
+        <style>
 
-    .group-container {
-        display:grid;
-        grid-template-columns:repeat(4,1fr);
-        gap:30px;
-        margin-bottom:50px;
-    }
+        .team-badge {
+            display:inline-block;
+            margin-left:6px;
+            padding:1px 6px;
+            font-size:11px;
+            font-weight:700;
+            color:#0f172a;
+            background:#facc15;
+            border-radius:6px;
+        }
 
-    .group-table {
-        background:#020617;
-        border-radius:14px;
-        padding:20px;
-    }
+        .group-container {
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:30px;
+            margin-bottom:50px;
+        }
 
-    .group-title {
-        font-size:22px;
-        font-weight:800;
-        margin-bottom:12px;
-        color:#38bdf8;
-    }
+        .group-table {
+            background:#020617;
+            border-radius:14px;
+            padding:20px;
+        }
 
-    .group-table table {
-        width:100%;
-        border-collapse:collapse;
-    }
+        .group-title {
+            font-size:22px;
+            font-weight:800;
+            margin-bottom:12px;
+            color:#38bdf8;
+        }
 
-    .group-table th {
-        color:#94a3b8;
-        font-size:14px;
-        padding:10px;
-        text-align:center;
-    }
+        .group-table table {
+            width:100%;
+            border-collapse:collapse;
+        }
 
-    .team-head {
-        text-align:left;
-    }
+        .group-table th {
+            color:#94a3b8;
+            font-size:14px;
+            padding:10px;
+            text-align:center;
+        }
 
-    .group-table td {
-        color:#e2e8f0;
-        padding:10px;
-        text-align:center;
-    }
+        .team-head {
+            text-align:left;
+        }
 
-    .team-col {
-        text-align:left;
-        font-weight:600;
-    }
+        .group-table td {
+            color:#e2e8f0;
+            padding:10px;
+            text-align:center;
+        }
 
-    .rank-highlight {
-        background:#0f172a;
-        border-left:4px solid #38bdf8;
-    }
+        .team-col {
+            text-align:left;
+            font-weight:600;
+        }
 
-    .rank-first {
-        background:#1e293b;
-        border-left:4px solid #facc15;
-    }
+        .rank-highlight {
+            background:#0f172a;
+            border-left:4px solid #38bdf8;
+        }
 
-    .match-day {
-        margin-bottom:50px;
-    }
+        .rank-first {
+            background:#1e293b;
+            border-left:4px solid #facc15;
+        }
 
-    .match-day-title {
-        font-size:28px;
-        font-weight:800;
-        margin-bottom:18px;
-        color:#60a5fa;
-    }
+        .match-day {
+            margin-bottom:50px;
+        }
 
-    .match-grid {
-        display:grid;
-        grid-template-columns:1fr 1fr 1fr;
-        gap:18px;
-    }
+        .match-day-title {
+            font-size:28px;
+            font-weight:800;
+            margin-bottom:18px;
+            color:#60a5fa;
+        }
 
-    .match-card {
-        background:#020617;
-        border-radius:14px;
-        padding:18px 24px;
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        box-shadow:0 10px 22px rgba(0,0,0,0.35);
-    }
+        .match-grid {
+            display:grid;
+            grid-template-columns:1fr 1fr 1fr;
+            gap:18px;
+        }
 
-    .team {
-        font-size:18px;
-        font-weight:700;
-        width:35%;
-        color:#e2e8f0;
-    }
+        .match-card {
+            background:#020617;
+            border-radius:14px;
+            padding:18px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            box-shadow:0 10px 22px rgba(0,0,0,0.35);
+        }
 
-    .team-left {
-        text-align:left;
-    }
+        .team {
+            font-size:18px;
+            font-weight:700;
+            width:35%;
+            color:#e2e8f0;
+        }
 
-    .team-right {
-        text-align:right;
-    }
+        .team-left {
+            text-align:left;
+        }
 
-    .match-score {
-        font-size:26px;
-        font-weight:900;
-        color:#facc15;
-    }
+        .team-right {
+            text-align:right;
+        }
 
-    @media (max-width:900px) {
+        .match-score {
+            font-size:26px;
+            font-weight:900;
+            color:#facc15;
+        }
 
-    .match-grid {
-        grid-template-columns:1fr;
-    }
+        @media (max-width:900px) {
 
-    .group-container {
-        grid-template-columns:1fr;
-    }
+        .match-grid {
+            grid-template-columns:1fr;
+        }
 
-    }
+        .group-container {
+            grid-template-columns:1fr;
+        }
 
-    </style>
+        }
 
-    
+        </style>
+
+        
         <div class="group-container">
             
             <div class="group-table">
@@ -279,7 +290,10 @@
                         
                 <tr class="rank-first">
                     <td>1</td>
-                    <td class="team-col">潇甜甜</td>
+                    <td class="team-col">
+                        潇甜甜
+                        
+                    </td>
                     <td>2</td>
                     <td>4</td>
                     <td>1</td>
@@ -288,7 +302,10 @@
                 
                 <tr class="rank-highlight">
                     <td>2</td>
-                    <td class="team-col">大董无敌</td>
+                    <td class="team-col">
+                        大董无敌
+                        
+                    </td>
                     <td>2</td>
                     <td>5</td>
                     <td>3</td>
@@ -297,7 +314,10 @@
                 
                 <tr class="rank-highlight">
                     <td>3</td>
-                    <td class="team-col">快乐星球V12</td>
+                    <td class="team-col">
+                        快乐星球V12
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>0</td>
@@ -306,7 +326,10 @@
                 
                 <tr class="rank-highlight">
                     <td>4</td>
-                    <td class="team-col">哈基米</td>
+                    <td class="team-col">
+                        哈基米
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>2</td>
@@ -315,7 +338,10 @@
                 
                 <tr class="">
                     <td>5</td>
-                    <td class="team-col">IKUN</td>
+                    <td class="team-col">
+                        IKUN
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>2</td>
@@ -324,7 +350,10 @@
                 
                 <tr class="">
                     <td>6</td>
-                    <td class="team-col">无敌暴龙战士</td>
+                    <td class="team-col">
+                        无敌暴龙战士
+                        
+                    </td>
                     <td>0</td>
                     <td>1</td>
                     <td>4</td>
@@ -358,7 +387,10 @@
                         
                 <tr class="rank-first">
                     <td>1</td>
-                    <td class="team-col">V超甜</td>
+                    <td class="team-col">
+                        V超甜
+                        
+                    </td>
                     <td>2</td>
                     <td>4</td>
                     <td>1</td>
@@ -367,7 +399,10 @@
                 
                 <tr class="rank-highlight">
                     <td>2</td>
-                    <td class="team-col">就折水平</td>
+                    <td class="team-col">
+                        就折水平
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>1</td>
@@ -376,7 +411,10 @@
                 
                 <tr class="rank-highlight">
                     <td>3</td>
-                    <td class="team-col">外卖到了先别开团</td>
+                    <td class="team-col">
+                        外卖到了先别开团
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
@@ -385,7 +423,10 @@
                 
                 <tr class="rank-highlight">
                     <td>4</td>
-                    <td class="team-col">斯巴达</td>
+                    <td class="team-col">
+                        斯巴达
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
@@ -394,7 +435,10 @@
                 
                 <tr class="">
                     <td>5</td>
-                    <td class="team-col">GSN</td>
+                    <td class="team-col">
+                        GSN
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>2</td>
@@ -403,7 +447,10 @@
                 
                 <tr class="">
                     <td>6</td>
-                    <td class="team-col">WBD</td>
+                    <td class="team-col">
+                        WBD
+                        
+                    </td>
                     <td>0</td>
                     <td>2</td>
                     <td>4</td>
@@ -437,7 +484,10 @@
                         
                 <tr class="rank-first">
                     <td>1</td>
-                    <td class="team-col">飞行淇</td>
+                    <td class="team-col">
+                        飞行淇
+                        
+                    </td>
                     <td>2</td>
                     <td>4</td>
                     <td>0</td>
@@ -446,7 +496,10 @@
                 
                 <tr class="rank-highlight">
                     <td>2</td>
-                    <td class="team-col">牢王来了</td>
+                    <td class="team-col">
+                        牢王来了
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>0</td>
@@ -455,7 +508,10 @@
                 
                 <tr class="rank-highlight">
                     <td>3</td>
-                    <td class="team-col">AUV</td>
+                    <td class="team-col">
+                        AUV
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>0</td>
@@ -464,7 +520,10 @@
                 
                 <tr class="rank-highlight">
                     <td>4</td>
-                    <td class="team-col">皮划艇</td>
+                    <td class="team-col">
+                        皮划艇
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>0</td>
@@ -473,7 +532,10 @@
                 
                 <tr class="">
                     <td>5</td>
-                    <td class="team-col">ikunの四区兄弟</td>
+                    <td class="team-col">
+                        ikunの四区兄弟
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>3</td>
@@ -482,7 +544,10 @@
                 
                 <tr class="">
                     <td>6</td>
-                    <td class="team-col">麒麟队</td>
+                    <td class="team-col">
+                        麒麟队
+                        <span class="team-badge">最快完赛</span>
+                    </td>
                     <td>0</td>
                     <td>1</td>
                     <td>10</td>
@@ -516,7 +581,10 @@
                         
                 <tr class="rank-first">
                     <td>1</td>
-                    <td class="team-col">咕咕嘎嘎</td>
+                    <td class="team-col">
+                        咕咕嘎嘎
+                        
+                    </td>
                     <td>1</td>
                     <td>2</td>
                     <td>0</td>
@@ -525,7 +593,10 @@
                 
                 <tr class="rank-highlight">
                     <td>2</td>
-                    <td class="team-col">全妹队</td>
+                    <td class="team-col">
+                        全妹队
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
@@ -534,7 +605,10 @@
                 
                 <tr class="rank-highlight">
                     <td>3</td>
-                    <td class="team-col">神将杯冠军</td>
+                    <td class="team-col">
+                        神将杯冠军
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
@@ -543,7 +617,10 @@
                 
                 <tr class="rank-highlight">
                     <td>4</td>
-                    <td class="team-col">拉扯一下别急</td>
+                    <td class="team-col">
+                        拉扯一下别急
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
@@ -552,7 +629,10 @@
                 
                 <tr class="">
                     <td>5</td>
-                    <td class="team-col">陀螺队</td>
+                    <td class="team-col">
+                        陀螺队
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>0</td>
@@ -561,7 +641,10 @@
                 
                 <tr class="">
                     <td>6</td>
-                    <td class="team-col">卡了电竞魔王护</td>
+                    <td class="team-col">
+                        卡了电竞魔王护
+                        
+                    </td>
                     <td>0</td>
                     <td>0</td>
                     <td>2</td>
@@ -577,7 +660,7 @@
         </div>
         
 
-    
+        
             <div class="match-day">
 
                 <div class="match-day-title">
@@ -909,7 +992,7 @@
             </div>
             
 
-      
+          
     
 </div>  
 
