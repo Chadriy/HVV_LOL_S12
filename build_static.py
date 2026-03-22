@@ -1011,6 +1011,7 @@ class StaticSiteBuilder:
 
         # ✅ 铭牌配置（只影响积分榜）
         team_badges = {
+            "无敌暴龙战士": "最快完赛",
             "麒麟队": "最快完赛"
         }
 
