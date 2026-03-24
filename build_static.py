@@ -32,6 +32,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 RANK_CACHE_FILE = "rank_cache.json"
 
+
 def load_rank_cache():
     if os.path.exists(RANK_CACHE_FILE):
         try:
@@ -46,11 +47,12 @@ def save_rank_cache(cache):
     with open(RANK_CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
+
 import time
 import random
 
-def fetch_player_rank(game_id, cache, retry=3):
 
+def fetch_player_rank(game_id, cache, retry=3):
     if not game_id:
         return "-"
 
@@ -85,6 +87,7 @@ def fetch_player_rank(game_id, cache, retry=3):
 
             # 重试等待
             time.sleep(1 + random.random())
+
 
 LANE_MAP = {
     "TOP": "上",
@@ -262,7 +265,8 @@ def team_name_from_meta(match_meta: Dict[str, Dict[str, Optional[str]]], match_i
     return str(team_id)
 
 
-def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match_meta: Dict[str, Dict[str, Optional[str]]]) -> pd.DataFrame:
+def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str],
+                 match_meta: Dict[str, Dict[str, Optional[str]]]) -> pd.DataFrame:
     rows = []
 
     for idx, m in enumerate(matches, start=1):
@@ -297,6 +301,7 @@ def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match
             kp = extract_kp_percent(ech)
             gold = extract_gold(ech, p.get("goldEarned"))
             level = _safe_int(p.get("dengji"), None)
+            damage = _safe_float(ech.get("totalDamageDealt"), None)
             team_name = team_name_from_meta(match_meta, match_id, team_id)
 
             rows.append({
@@ -318,6 +323,7 @@ def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match
                 "kpr": kp,
                 "gold": gold,
                 "level": level,
+                "damage": damage,
             })
 
     df = pd.DataFrame(rows)
@@ -325,12 +331,14 @@ def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match
         return df
 
     df["kda"] = (df["kills"].fillna(0) + df["assists"].fillna(0)) / df["deaths"].fillna(0).replace(0, 1)
+    df["damage_conversion_rate"] = df["damage"] / df["gold"].replace(0, pd.NA)
 
     df["opponent_teamId"] = df["teamId"].map(
         lambda x: "200" if str(x) == "100" else ("100" if str(x) == "200" else None)
     )
     df["opponent_team_name"] = df.apply(
-        lambda r: team_name_from_meta(match_meta, r["match_id"], r["opponent_teamId"]) if r["opponent_teamId"] else None,
+        lambda r: team_name_from_meta(match_meta, r["match_id"], r["opponent_teamId"]) if r[
+            "opponent_teamId"] else None,
         axis=1
     )
 
@@ -405,10 +413,13 @@ def agg_players(df: pd.DataFrame) -> pd.DataFrame:
         avg_kp=("kpr", "mean"),
         avg_gold_diff=("gold_diff", "mean"),
         avg_level_diff=("level_diff", "mean"),
+        avg_damage_conversion_rate=("damage_conversion_rate", "mean"),
+        avg_gold=("gold", "mean"),
+        avg_damage=("damage", "mean"),
     ).reset_index()
 
     out["winrate"] = (out["winrate"] * 100).round(2)
-    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"]:
+    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff", "avg_damage_conversion_rate"]:
         out[c] = out[c].round(2)
 
     return out.sort_values(["lane", "winrate", "avg_score", "games"], ascending=[True, False, False, False])
@@ -428,10 +439,14 @@ def agg_champions(df: pd.DataFrame) -> pd.DataFrame:
         avg_kp=("kpr", "mean"),
         avg_gold_diff=("gold_diff", "mean"),
         avg_level_diff=("level_diff", "mean"),
+        avg_damage_conversion_rate=("damage_conversion_rate", "mean"),
+        avg_gold=("gold", "mean"),
+        avg_damage=("damage", "mean"),
     ).reset_index()
 
     out["winrate"] = (out["winrate"] * 100).round(2)
-    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"]:
+    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff", "avg_damage_conversion_rate",
+              "avg_gold", "avg_damage"]:
         out[c] = out[c].round(2)
 
     return out.sort_values(["lane", "winrate", "avg_score", "games"], ascending=[True, False, False, False])
@@ -466,8 +481,8 @@ def build_team_match_stats(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     out["team_kda"] = (
-        (out["team_kills"].fillna(0) + out["team_assists"].fillna(0))
-        / out["team_deaths"].fillna(0).replace(0, 1)
+            (out["team_kills"].fillna(0) + out["team_assists"].fillna(0))
+            / out["team_deaths"].fillna(0).replace(0, 1)
     )
     out["result"] = out["win"].map(lambda x: "胜" if bool(x) else "负")
 
@@ -562,6 +577,7 @@ def agg_team_ban_champions(ban_df: pd.DataFrame) -> pd.DataFrame:
 
 import re
 
+
 def safe_file_stem(s: str) -> str:
     s = str(s)
     s = re.sub(r'[^a-zA-Z0-9\u4e00-\u9fa5]+', "_", s)
@@ -589,7 +605,8 @@ def rel_href(current_dir: str, target: str) -> str:
     return posixpath.relpath(target, start=start)
 
 
-def df_to_table(df: pd.DataFrame, columns: List[str], col_rename: Dict[str, str], table_id: str, escape: bool = True) -> str:
+def df_to_table(df: pd.DataFrame, columns: List[str], col_rename: Dict[str, str], table_id: str,
+                escape: bool = True) -> str:
     if df.empty:
         return ""
     view = df[columns].copy().rename(columns=col_rename)
@@ -602,8 +619,8 @@ def df_to_table(df: pd.DataFrame, columns: List[str], col_rename: Dict[str, str]
         na_rep="-",
     )
 
-def format_date_cn(date_str):
 
+def format_date_cn(date_str):
     if not date_str:
         return "-"
 
@@ -617,7 +634,8 @@ def format_date_cn(date_str):
     d = int(s[6:8])
 
     return f"{y}年{m}月{d}日"
-    
+
+
 def fmt_num(x, digits=2, suffix=""):
     if x is None:
         return "-"
@@ -628,12 +646,31 @@ def fmt_num(x, digits=2, suffix=""):
         pass
     try:
         v = float(x)
+        if suffix == "K":
+            v /= 1000
         if digits == 0:
             return f"{int(round(v))}{suffix}"
         s = f"{v:.{digits}f}".rstrip("0").rstrip(".")
         return f"{s}{suffix}"
     except Exception:
         return f"{x}{suffix}"
+
+
+def fmt_damage_conversion_rate(rate, gold, damage):
+    if rate is None or gold is None or damage is None:
+        return "-"
+    try:
+        if pd.isna(rate) or pd.isna(gold) or pd.isna(damage):
+            return "-"
+    except Exception:
+        pass
+    try:
+        rate_str = f"{float(rate):.3f}"
+        gold_str = fmt_num(gold, 0, "K") if gold >= 1000 else fmt_num(gold, 0)
+        damage_str = fmt_num(damage, 0, "K") if damage >= 1000 else fmt_num(damage, 0)
+        return f"{rate_str}({damage_str}/{gold_str})"
+    except Exception:
+        return "-"
 
 
 def result_badge(x: Any) -> str:
@@ -956,7 +993,6 @@ class StaticSiteBuilder:
         print(f"段位查询：缓存 {len(players) - len(need_query)} 人，需要查询 {len(need_query)} 人")
 
         for player in need_query:
-
             game_id = player
 
             rank = fetch_player_rank(game_id, self.rank_cache)
@@ -983,7 +1019,8 @@ class StaticSiteBuilder:
 
         self.ban_stats = make_ban_stats(self.ban_df, total_matches=self.total_matches)
         if not self.ban_stats.empty:
-            self.ban_stats["champion_name"] = self.ban_stats["champion_id"].map(lambda x: self.champ_map.get(str(x), str(x)))
+            self.ban_stats["champion_name"] = self.ban_stats["champion_id"].map(
+                lambda x: self.champ_map.get(str(x), str(x)))
 
         self.team_pick_champs_df = agg_team_pick_champions(self.df_detail)
         self.team_ban_champs_df = agg_team_ban_champions(self.ban_df)
@@ -1077,6 +1114,22 @@ class StaticSiteBuilder:
         result_df = result_df.sort_values("date_sort", ascending=False)
         result_df = result_df.drop(columns=["date_sort"])
 
+        # 加载手动比赛结果修正
+        manual_results_file = "manual_match_results.json"
+        if os.path.exists(manual_results_file):
+            with open(manual_results_file, "r", encoding="utf-8") as f:
+                manual_results = json.load(f)
+            for key, manual in manual_results.items():
+                # key 格式: date_left_right
+                parts = key.split("_", 2)
+                if len(parts) == 3:
+                    m_date, m_left, m_right = parts
+                    mask = (result_df["date"] == m_date) & (result_df["left"] == m_left) & (
+                                result_df["right"] == m_right)
+                    if mask.any():
+                        result_df.loc[mask, "left_wins"] = manual["left_wins"]
+                        result_df.loc[mask, "right_wins"] = manual["right_wins"]
+
         groups = {}
         team_to_group = {}
 
@@ -1109,7 +1162,8 @@ class StaticSiteBuilder:
                 "group": team_to_group[team],
                 "points": 0,
                 "win": 0,
-                "lose": 0
+                "lose": 0,
+                "games": 0
             }
 
         for _, r in result_df.iterrows():
@@ -1123,10 +1177,12 @@ class StaticSiteBuilder:
             if left in team_stats:
                 team_stats[left]["win"] += lw
                 team_stats[left]["lose"] += rw
+                team_stats[left]["games"] += 1
 
             if right in team_stats:
                 team_stats[right]["win"] += rw
                 team_stats[right]["lose"] += lw
+                team_stats[right]["games"] += 1
 
             if lw > rw:
                 if left in team_stats:
@@ -1168,7 +1224,7 @@ class StaticSiteBuilder:
                         {html_escape(r["team"])}
                         {f'<span class="team-badge">{team_badges[r["team"]]}</span>' if r["team"] in team_badges else ''}
                     </td>
-                    <td>{r["points"]}</td>
+                    <td>{r["points"]}-{r["games"] - r["points"]}</td>
                     <td>{r["win"]}</td>
                     <td>{r["lose"]}</td>
                     <td>{r["diff"]}</td>
@@ -1188,7 +1244,7 @@ class StaticSiteBuilder:
                         <tr>
                             <th>排名</th>
                             <th class="team-head">队伍</th>
-                            <th>积分</th>
+                            <th>大局胜负</th>
                             <th>小局胜</th>
                             <th>小局负</th>
                             <th>净胜</th>
@@ -1408,6 +1464,7 @@ class StaticSiteBuilder:
 
         self.write_file("index.html", html)
         self.write_file("daily.html", html)
+
     def write_file(self, rel_path: str, content: str):
         fp = os.path.join(self.out_dir, *rel_path.split("/"))
         os.makedirs(os.path.dirname(fp), exist_ok=True)
@@ -1415,19 +1472,19 @@ class StaticSiteBuilder:
             f.write(content)
 
     def render_page(
-        self,
-        *,
-        current_dir: str,
-        title: str,
-        active: str,
-        page_desc: str = "",
-        summary_cards: Optional[List[Dict[str, Any]]] = None,
-        tabs: bool = False,
-        tables: Optional[Dict[str, str]] = None,
-        counts: Optional[Dict[str, int]] = None,
-        content: str = "",
-        tabs_title: str = "",
-        tabs_subtitle: str = "",
+            self,
+            *,
+            current_dir: str,
+            title: str,
+            active: str,
+            page_desc: str = "",
+            summary_cards: Optional[List[Dict[str, Any]]] = None,
+            tabs: bool = False,
+            tables: Optional[Dict[str, str]] = None,
+            counts: Optional[Dict[str, int]] = None,
+            content: str = "",
+            tabs_title: str = "",
+            tabs_subtitle: str = "",
     ) -> str:
         return self.template.render(
             title=title,
@@ -1500,8 +1557,12 @@ class StaticSiteBuilder:
         if not pdf.empty:
             pdf["team_link"] = pdf["team"].map(team_link)
         for lane in LANES:
-            dff = pdf[pdf["lane"] == lane] if not pdf.empty else pdf
+            dff = pdf[pdf["lane"] == lane].copy() if not pdf.empty else pdf
             counts[lane] = len(dff)
+            if not dff.empty:
+                dff["avg_damage_conversion_rate_fmt"] = dff.apply(
+                    lambda r: fmt_damage_conversion_rate(r["avg_damage_conversion_rate"], r["avg_gold"],
+                                                         r["avg_damage"]), axis=1)
             tables[lane] = df_to_table(
                 dff,
                 columns=[
@@ -1515,7 +1576,8 @@ class StaticSiteBuilder:
                     "avg_kda",
                     "avg_kp",
                     "avg_gold_diff",
-                    "avg_level_diff"
+                    "avg_level_diff",
+                    "avg_damage_conversion_rate_fmt"
                 ],
                 col_rename={
                     "player_link": "选手",
@@ -1529,6 +1591,7 @@ class StaticSiteBuilder:
                     "avg_kp": "平均参团率(%)",
                     "avg_gold_diff": "场均对位经济差",
                     "avg_level_diff": "场均对位等级差",
+                    "avg_damage_conversion_rate_fmt": "伤害转化率(伤害/金钱)"
                 },
                 table_id=f"tbl_players_{lane}",
                 escape=False,
@@ -1584,9 +1647,9 @@ class StaticSiteBuilder:
             dff = sort_matches_df(dff, ascending=False)
             dff["result"] = dff["win"].map(result_badge)
             dff["kda_str"] = (
-                dff["kills"].fillna(0).astype(int).astype(str) + "/" +
-                dff["deaths"].fillna(0).astype(int).astype(str) + "/" +
-                dff["assists"].fillna(0).astype(int).astype(str)
+                    dff["kills"].fillna(0).astype(int).astype(str) + "/" +
+                    dff["deaths"].fillna(0).astype(int).astype(str) + "/" +
+                    dff["assists"].fillna(0).astype(int).astype(str)
             )
             dff["match_link"] = dff["match_id"].map(match_link)
             dff["champ_link"] = dff.apply(lambda r: champion_link(r["champion_id"], r["champion_name"]), axis=1)
@@ -1594,7 +1657,9 @@ class StaticSiteBuilder:
 
             table_html = df_to_table(
                 dff,
-                columns=["match_link", "match_date", "match_no", "lane", "team_link", "result", "champ_link", "opp_player", "opp_champion", "score", "kda_str", "kpr", "gold", "level", "gold_diff", "level_diff"],
+                columns=["match_link", "match_date", "match_no", "lane", "team_link", "result", "champ_link",
+                         "opp_player", "opp_champion", "score", "kda_str", "kpr", "gold", "level", "gold_diff",
+                         "level_diff"],
                 col_rename={
                     "match_link": "对局ID",
                     "match_date": "日期",
@@ -1656,11 +1721,16 @@ class StaticSiteBuilder:
             cdf["champ_link"] = cdf.apply(lambda r: champion_link(r["champion_id"], r["champion_name"]), axis=1)
 
         for lane in LANES:
-            dff = cdf[cdf["lane"] == lane] if not cdf.empty else cdf
+            dff = cdf[cdf["lane"] == lane].copy() if not cdf.empty else cdf
             counts[lane] = len(dff)
+            if not dff.empty:
+                dff["avg_damage_conversion_rate_fmt"] = dff.apply(
+                    lambda r: fmt_damage_conversion_rate(r["avg_damage_conversion_rate"], r["avg_gold"],
+                                                         r["avg_damage"]), axis=1)
             tables[lane] = df_to_table(
                 dff,
-                columns=["champ_link", "games", "wins", "winrate", "avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"],
+                columns=["champ_link", "games", "wins", "winrate", "avg_score", "avg_kda", "avg_kp", "avg_gold_diff",
+                         "avg_level_diff", "avg_damage_conversion_rate_fmt"],
                 col_rename={
                     "champ_link": "英雄",
                     "games": "总场次",
@@ -1671,6 +1741,7 @@ class StaticSiteBuilder:
                     "avg_kp": "平均参团率(%)",
                     "avg_gold_diff": "场均对位经济差",
                     "avg_level_diff": "场均对位等级差",
+                    "avg_damage_conversion_rate_fmt": "伤害转化率(伤害/金钱)"
                 },
                 table_id=f"tbl_champions_{lane}",
                 escape=False,
@@ -1678,8 +1749,10 @@ class StaticSiteBuilder:
 
         summary_cards = [
             {"label": "总对局数", "value": self.total_matches},
-            {"label": "已上场英雄", "value": self.df_detail["champion_name"].nunique() if not self.df_detail.empty else 0},
-            {"label": "有Ban记录英雄", "value": self.ban_stats["champion_id"].nunique() if not self.ban_stats.empty else 0},
+            {"label": "已上场英雄",
+             "value": self.df_detail["champion_name"].nunique() if not self.df_detail.empty else 0},
+            {"label": "有Ban记录英雄",
+             "value": self.ban_stats["champion_id"].nunique() if not self.ban_stats.empty else 0},
             {"label": "总Ban次数", "value": len(self.ban_df) if not self.ban_df.empty else 0},
         ]
 
@@ -1718,9 +1791,9 @@ class StaticSiteBuilder:
                 played = sort_matches_df(played, ascending=False)
                 played["result"] = played["win"].map(result_badge)
                 played["kda_str"] = (
-                    played["kills"].fillna(0).astype(int).astype(str) + "/" +
-                    played["deaths"].fillna(0).astype(int).astype(str) + "/" +
-                    played["assists"].fillna(0).astype(int).astype(str)
+                        played["kills"].fillna(0).astype(int).astype(str) + "/" +
+                        played["deaths"].fillna(0).astype(int).astype(str) + "/" +
+                        played["assists"].fillna(0).astype(int).astype(str)
                 )
                 played["match_link"] = played["match_id"].map(match_link)
                 played["player_link"] = played["player"].map(player_link)
@@ -1728,7 +1801,9 @@ class StaticSiteBuilder:
 
                 played_table = df_to_table(
                     played,
-                    columns=["match_link", "match_date", "match_no", "player_link", "lane", "team_link", "result", "opp_player", "opp_champion", "score", "kda_str", "kpr", "gold", "level", "gold_diff", "level_diff"],
+                    columns=["match_link", "match_date", "match_no", "player_link", "lane", "team_link", "result",
+                             "opp_player", "opp_champion", "score", "kda_str", "kpr", "gold", "level", "gold_diff",
+                             "level_diff"],
                     col_rename={
                         "match_link": "对局ID",
                         "match_date": "日期",
@@ -1799,18 +1874,18 @@ class StaticSiteBuilder:
             ]
 
             content = (
-                build_section_card(
-                    title=f"英雄上场明细：{champ_name}（ID: {cid}）",
-                    subtitle="所有使用该英雄的对局详情",
-                    actions_html=f'<a class="btn btn-soft" href="{rel_href(current_dir, "champions.html")}">返回英雄榜</a>',
-                    body_html=played_html
-                )
-                +
-                build_section_card(
-                    title=f"被 Ban 明细：{champ_name}",
-                    subtitle=f"总 Ban 次数：{bans}",
-                    body_html=banned_html
-                )
+                    build_section_card(
+                        title=f"英雄上场明细：{champ_name}（ID: {cid}）",
+                        subtitle="所有使用该英雄的对局详情",
+                        actions_html=f'<a class="btn btn-soft" href="{rel_href(current_dir, "champions.html")}">返回英雄榜</a>',
+                        body_html=played_html
+                    )
+                    +
+                    build_section_card(
+                        title=f"被 Ban 明细：{champ_name}",
+                        subtitle=f"总 Ban 次数：{bans}",
+                        body_html=banned_html
+                    )
             )
 
             html = self.render_page(
@@ -2205,6 +2280,7 @@ class StaticSiteBuilder:
 
         # 最后生成每日战绩（覆盖 index.html）
         self.build_daily_results()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
