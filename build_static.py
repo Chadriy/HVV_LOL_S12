@@ -1077,6 +1077,21 @@ class StaticSiteBuilder:
         result_df = result_df.sort_values("date_sort", ascending=False)
         result_df = result_df.drop(columns=["date_sort"])
 
+        # 加载手动比赛结果修正
+        manual_results_file = "manual_match_results.json"
+        if os.path.exists(manual_results_file):
+            with open(manual_results_file, "r", encoding="utf-8") as f:
+                manual_results = json.load(f)
+            for key, manual in manual_results.items():
+                # key 格式: date_left_right
+                parts = key.split("_", 2)
+                if len(parts) == 3:
+                    m_date, m_left, m_right = parts
+                    mask = (result_df["date"] == m_date) & (result_df["left"] == m_left) & (result_df["right"] == m_right)
+                    if mask.any():
+                        result_df.loc[mask, "left_wins"] = manual["left_wins"]
+                        result_df.loc[mask, "right_wins"] = manual["right_wins"]
+
         groups = {}
         team_to_group = {}
 
