@@ -297,6 +297,7 @@ def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match
             kp = extract_kp_percent(ech)
             gold = extract_gold(ech, p.get("goldEarned"))
             level = _safe_int(p.get("dengji"), None)
+            damage = _safe_float(ech.get("totalDamageDealt"), None)
             team_name = team_name_from_meta(match_meta, match_id, team_id)
 
             rows.append({
@@ -318,6 +319,7 @@ def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match
                 "kpr": kp,
                 "gold": gold,
                 "level": level,
+                "damage": damage,
             })
 
     df = pd.DataFrame(rows)
@@ -325,6 +327,7 @@ def extract_rows(matches: List[Dict[str, Any]], champ_map: Dict[str, str], match
         return df
 
     df["kda"] = (df["kills"].fillna(0) + df["assists"].fillna(0)) / df["deaths"].fillna(0).replace(0, 1)
+    df["damage_conversion_rate"] = df["damage"] / df["gold"].replace(0, pd.NA)
 
     df["opponent_teamId"] = df["teamId"].map(
         lambda x: "200" if str(x) == "100" else ("100" if str(x) == "200" else None)
@@ -405,10 +408,13 @@ def agg_players(df: pd.DataFrame) -> pd.DataFrame:
         avg_kp=("kpr", "mean"),
         avg_gold_diff=("gold_diff", "mean"),
         avg_level_diff=("level_diff", "mean"),
+        avg_damage_conversion_rate=("damage_conversion_rate", "mean"),
+        avg_gold=("gold", "mean"),
+        avg_damage=("damage", "mean"),
     ).reset_index()
 
     out["winrate"] = (out["winrate"] * 100).round(2)
-    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"]:
+    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff", "avg_damage_conversion_rate"]:
         out[c] = out[c].round(2)
 
     return out.sort_values(["lane", "winrate", "avg_score", "games"], ascending=[True, False, False, False])
@@ -428,10 +434,13 @@ def agg_champions(df: pd.DataFrame) -> pd.DataFrame:
         avg_kp=("kpr", "mean"),
         avg_gold_diff=("gold_diff", "mean"),
         avg_level_diff=("level_diff", "mean"),
+        avg_damage_conversion_rate=("damage_conversion_rate", "mean"),
+        avg_gold=("gold", "mean"),
+        avg_damage=("damage", "mean"),
     ).reset_index()
 
     out["winrate"] = (out["winrate"] * 100).round(2)
-    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"]:
+    for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff", "avg_damage_conversion_rate", "avg_gold", "avg_damage"]:
         out[c] = out[c].round(2)
 
     return out.sort_values(["lane", "winrate", "avg_score", "games"], ascending=[True, False, False, False])
@@ -628,12 +637,31 @@ def fmt_num(x, digits=2, suffix=""):
         pass
     try:
         v = float(x)
+        if suffix == "K":
+            v /= 1000
         if digits == 0:
             return f"{int(round(v))}{suffix}"
         s = f"{v:.{digits}f}".rstrip("0").rstrip(".")
         return f"{s}{suffix}"
     except Exception:
         return f"{x}{suffix}"
+
+
+def fmt_damage_conversion_rate(rate, gold, damage):
+    if rate is None or gold is None or damage is None:
+        return "-"
+    try:
+        if pd.isna(rate) or pd.isna(gold) or pd.isna(damage):
+            return "-"
+    except Exception:
+        pass
+    try:
+        rate_str = f"{float(rate):.3f}"
+        gold_str = fmt_num(gold, 0, "K") if gold >= 1000 else fmt_num(gold, 0)
+        damage_str = fmt_num(damage, 0, "K") if damage >= 1000 else fmt_num(damage, 0)
+        return f"{rate_str}({damage_str}/{gold_str})"
+    except Exception:
+        return "-"
 
 
 def result_badge(x: Any) -> str:
@@ -1506,8 +1534,10 @@ class StaticSiteBuilder:
         if not pdf.empty:
             pdf["team_link"] = pdf["team"].map(team_link)
         for lane in LANES:
-            dff = pdf[pdf["lane"] == lane] if not pdf.empty else pdf
+            dff = pdf[pdf["lane"] == lane].copy() if not pdf.empty else pdf
             counts[lane] = len(dff)
+            if not dff.empty:
+                dff["avg_damage_conversion_rate_fmt"] = dff.apply(lambda r: fmt_damage_conversion_rate(r["avg_damage_conversion_rate"], r["avg_gold"], r["avg_damage"]), axis=1)
             tables[lane] = df_to_table(
                 dff,
                 columns=[
@@ -1521,7 +1551,8 @@ class StaticSiteBuilder:
                     "avg_kda",
                     "avg_kp",
                     "avg_gold_diff",
-                    "avg_level_diff"
+                    "avg_level_diff",
+                    "avg_damage_conversion_rate_fmt"
                 ],
                 col_rename={
                     "player_link": "选手",
@@ -1535,6 +1566,7 @@ class StaticSiteBuilder:
                     "avg_kp": "平均参团率(%)",
                     "avg_gold_diff": "场均对位经济差",
                     "avg_level_diff": "场均对位等级差",
+                    "avg_damage_conversion_rate_fmt": "伤害转化率(伤害/金钱)"
                 },
                 table_id=f"tbl_players_{lane}",
                 escape=False,
@@ -1646,11 +1678,13 @@ class StaticSiteBuilder:
             cdf["champ_link"] = cdf.apply(lambda r: champion_link(r["champion_id"], r["champion_name"]), axis=1)
 
         for lane in LANES:
-            dff = cdf[cdf["lane"] == lane] if not cdf.empty else cdf
+            dff = cdf[cdf["lane"] == lane].copy() if not cdf.empty else cdf
             counts[lane] = len(dff)
+            if not dff.empty:
+                dff["avg_damage_conversion_rate_fmt"] = dff.apply(lambda r: fmt_damage_conversion_rate(r["avg_damage_conversion_rate"], r["avg_gold"], r["avg_damage"]), axis=1)
             tables[lane] = df_to_table(
                 dff,
-                columns=["champ_link", "games", "wins", "winrate", "avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff"],
+                columns=["champ_link", "games", "wins", "winrate", "avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff", "avg_damage_conversion_rate_fmt"],
                 col_rename={
                     "champ_link": "英雄",
                     "games": "总场次",
@@ -1661,6 +1695,7 @@ class StaticSiteBuilder:
                     "avg_kp": "平均参团率(%)",
                     "avg_gold_diff": "场均对位经济差",
                     "avg_level_diff": "场均对位等级差",
+                    "avg_damage_conversion_rate_fmt": "伤害转化率(伤害/金钱)"
                 },
                 table_id=f"tbl_champions_{lane}",
                 escape=False,
