@@ -1124,7 +1124,8 @@ class StaticSiteBuilder:
                 "group": team_to_group[team],
                 "points": 0,
                 "win": 0,
-                "lose": 0
+                "lose": 0,
+                "games": 0
             }
 
         for _, r in result_df.iterrows():
@@ -1138,10 +1139,12 @@ class StaticSiteBuilder:
             if left in team_stats:
                 team_stats[left]["win"] += lw
                 team_stats[left]["lose"] += rw
+                team_stats[left]["games"] += 1
 
             if right in team_stats:
                 team_stats[right]["win"] += rw
                 team_stats[right]["lose"] += lw
+                team_stats[right]["games"] += 1
 
             if lw > rw:
                 if left in team_stats:
@@ -1183,7 +1186,7 @@ class StaticSiteBuilder:
                         {html_escape(r["team"])}
                         {f'<span class="team-badge">{team_badges[r["team"]]}</span>' if r["team"] in team_badges else ''}
                     </td>
-                    <td>{r["points"]}</td>
+                    <td>{r["points"]}-{r["games"] - r["points"]}</td>
                     <td>{r["win"]}</td>
                     <td>{r["lose"]}</td>
                     <td>{r["diff"]}</td>
@@ -1203,7 +1206,7 @@ class StaticSiteBuilder:
                         <tr>
                             <th>排名</th>
                             <th class="team-head">队伍</th>
-                            <th>积分</th>
+                            <th>大局胜负</th>
                             <th>小局胜</th>
                             <th>小局负</th>
                             <th>净胜</th>
