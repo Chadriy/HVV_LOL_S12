@@ -803,7 +803,7 @@ BASE_HTML = r"""
     </button>  
     <div class="collapse navbar-collapse" id="topNav">  
       <div class="navbar-nav ms-auto">  
-        <a class="nav-link {% if active=='daily' %}active{% endif %}" href="{{ link_index }}">赛事情况</a>
+        <a class="nav-link {% if active=='daily' %}active{% endif %}" href="{{ link_index }}">小组赛</a>
         <a class="nav-link {% if active=='players' %}active{% endif %}" href="{{ link_players }}">选手数据</a>
         <a class="nav-link {% if active=='champions' %}active{% endif %}" href="{{ link_champions }}">英雄数据</a>  
         <a class="nav-link {% if active=='teams' %}active{% endif %}" href="{{ link_teams }}">队伍榜</a>  
@@ -829,6 +829,7 @@ BASE_HTML = r"""
           <div class="meta">英雄映射：<code>{{ champion_json_path }}</code></div>  
         </div>  
         <div class="col-lg-4 text-lg-end">  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_index }}">小组赛</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_players }}">选手榜</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_champions }}">英雄榜</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_teams }}">队伍榜</a>  
@@ -1451,7 +1452,7 @@ class StaticSiteBuilder:
 
         html = self.render_page(
             current_dir="",
-            title="赛事情况",
+            title="小组赛",
             active="index",
             page_desc="每日系列赛比分统计",
             summary_cards=[
