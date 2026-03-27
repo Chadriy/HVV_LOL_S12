@@ -1,0 +1,1631 @@
+  
+<!doctype html>  
+<html lang="zh-CN">  
+<head>  
+  <meta charset="utf-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1">  
+  <title>赛事情况</title>  
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">  
+  <link href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">  
+
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>  
+
+  <style>  
+    :root{  
+      --bg1:#f8fafc; --bg2:#eef2ff; --card:#ffffff; --text:#0f172a;  
+      --muted:#64748b; --primary:#4f46e5; --shadow:0 10px 30px rgba(15,23,42,.08);  
+      --radius:18px;  
+    }  
+    body{min-height:100vh;background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 100%);color:var(--text);}  
+    .navbar{background:rgba(15,23,42,.92)!important;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(2,6,23,.18);}  
+    .navbar-brand{font-weight:700;}  
+    .page-shell{padding-top:28px;padding-bottom:40px;}  
+    .hero-card{background:linear-gradient(135deg,#111827 0%,#312e81 100%);color:#fff;border:none;border-radius:24px;box-shadow:0 18px 40px rgba(31,41,55,.25);overflow:hidden;}  
+    .hero-card .meta{color:rgba(255,255,255,.78);font-size:.95rem;}  
+    .hero-badge{display:inline-flex;align-items:center;padding:.4rem .75rem;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);font-size:.86rem;margin-right:.5rem;margin-bottom:.5rem;}  
+    .app-card{border:none;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}  
+    .section-title{font-size:1.15rem;font-weight:700;color:var(--text);}  
+    .section-subtitle{margin-top:.35rem;color:var(--muted);font-size:.92rem;}  
+    .stat-card{background:var(--card);border:1px solid #edf2f7;border-radius:18px;padding:18px 18px 16px;box-shadow:0 8px 24px rgba(15,23,42,.05);}  
+    .stat-label{color:var(--muted);font-size:.92rem;margin-bottom:.45rem;}  
+    .stat-value{font-size:1.6rem;font-weight:800;line-height:1.2;color:var(--text);}  
+    .stat-sub{margin-top:.35rem;color:var(--muted);font-size:.85rem;}  
+    .nav-pills.lane-pills{gap:.65rem;flex-wrap:wrap;}  
+    .nav-pills.lane-pills .nav-link{border:none;border-radius:999px;padding:.65rem 1rem;font-weight:600;color:#334155;background:#f8fafc;box-shadow:inset 0 0 0 1px #e2e8f0;}  
+    .nav-pills.lane-pills .nav-link.active{background:var(--primary);color:#fff;box-shadow:none;}  
+    .lane-badge{margin-left:.45rem;border-radius:999px;padding:.15rem .5rem;font-size:.78rem;background:rgba(255,255,255,.2);}  
+    .nav-pills.lane-pills .nav-link:not(.active) .lane-badge{background:#e2e8f0;color:#334155;}  
+    .table-wrap{overflow-x:auto;border:1px solid #edf2f7;border-radius:16px;background:#fff;}  
+    table.dataTable{margin-top:0!important;margin-bottom:0!important;}  
+    table.dataTable thead th{background:#f8fafc;color:#334155;font-weight:700;border-bottom:1px solid #e5e7eb!important;white-space:nowrap;}  
+    table.dataTable tbody td{white-space:nowrap;vertical-align:middle;}  
+    .dataTables_wrapper .dataTables_filter input,.dataTables_wrapper .dataTables_length select{border-radius:10px!important;border:1px solid #dbe2ea!important;box-shadow:none!important;}  
+    .dataTables_wrapper .dataTables_filter,.dataTables_wrapper .dataTables_length{margin-bottom:14px;}  
+    a{text-decoration:none;} a:hover{text-decoration:underline;}  
+    .result-badge{display:inline-block;padding:.28rem .7rem;border-radius:999px;font-size:.84rem;font-weight:700;}  
+    .badge-win{color:#166534;background:#dcfce7;} .badge-lose{color:#991b1b;background:#fee2e2;}  
+    .team-panel{border:1px solid #edf2f7;border-radius:18px;background:#fff;padding:18px;height:100%;}  
+    .team-title{font-size:1.05rem;font-weight:800;margin-bottom:4px;}  
+    .team-sub{color:var(--muted);font-size:.9rem;margin-bottom:14px;}  
+    .empty-state{padding:32px 16px;text-align:center;color:var(--muted);border:1px dashed #dbe2ea;border-radius:16px;background:#fbfdff;}  
+    .btn-soft{background:#fff;border:1px solid #dbe2ea;color:#334155;border-radius:12px;padding:.55rem .9rem;font-weight:600;}  
+    .btn-soft:hover{background:#f8fafc;color:#0f172a;}  
+    code{background:#eef2ff;color:#3730a3;padding:.15rem .35rem;border-radius:8px;}  
+  </style>  
+</head>  
+
+<body>  
+<nav class="navbar navbar-expand-lg navbar-dark">  
+  <div class="container-fluid px-4">  
+    <a class="navbar-brand" href="index.html">HVV杯英雄联盟S12赛季比赛数据总览</a>  
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">  
+      <span class="navbar-toggler-icon"></span>  
+    </button>  
+    <div class="collapse navbar-collapse" id="topNav">  
+      <div class="navbar-nav ms-auto">  
+        <a class="nav-link " href="knockout.html">淘汰赛</a>
+        <a class="nav-link " href="index.html">赛事情况</a>
+        <a class="nav-link " href="players.html">选手数据</a>
+        <a class="nav-link " href="champions.html">英雄数据</a>  
+        <a class="nav-link " href="teams.html">队伍榜</a>  
+        <a class="nav-link " href="bans.html">Ban榜</a>  
+      </div>  
+    </div>  
+  </div>  
+</nav>  
+
+<div class="container-fluid page-shell px-3 px-lg-4">  
+  <div class="card hero-card mb-4">  
+    <div class="card-body p-4 p-lg-5">  
+      <div class="row g-4 align-items-center">  
+        <div class="col-lg-8">  
+          <div class="d-flex flex-wrap mb-2">  
+            <span class="hero-badge">总对局：97</span>  
+            <span class="hero-badge">数据源：.\matches</span>  
+          </div>  
+          <h1 class="h3 mb-2">赛事情况</h1>  
+            
+            <div class="meta mb-3">每日系列赛比分统计</div>  
+            
+          <div class="meta">英雄映射：<code>champion.json</code></div>  
+        </div>  
+        <div class="col-lg-4 text-lg-end">  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="players.html">选手榜</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="champions.html">英雄榜</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="teams.html">队伍榜</a>  
+          <a class="btn btn-light btn-sm mb-2" href="bans.html">Ban榜</a>  
+        </div>  
+      </div>  
+    </div>  
+  </div>  
+
+    
+    <div class="row g-3 mb-4">  
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">比赛日</div>  
+            <div class="stat-value">12</div>  
+              
+          </div>  
+        </div>  
+          
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">系列赛</div>  
+            <div class="stat-value">44</div>  
+              
+          </div>  
+        </div>  
+          
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">总对局</div>  
+            <div class="stat-value">97</div>  
+              
+          </div>  
+        </div>  
+        </div>  
+    
+
+    
+    
+
+        <style>
+
+        .team-badge {
+            display:inline-block;
+            margin-left:6px;
+            padding:1px 6px;
+            font-size:11px;
+            font-weight:700;
+            color:#0f172a;
+            background:#facc15;
+            border-radius:6px;
+        }
+
+        .group-container {
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:30px;
+            margin-bottom:50px;
+        }
+
+        .group-table {
+            background:#020617;
+            border-radius:14px;
+            padding:20px;
+        }
+
+        .group-title {
+            font-size:22px;
+            font-weight:800;
+            margin-bottom:12px;
+            color:#38bdf8;
+        }
+
+        .group-table table {
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        .group-table th {
+            color:#94a3b8;
+            font-size:14px;
+            padding:10px;
+            text-align:center;
+        }
+
+        .team-head {
+            text-align:left;
+        }
+
+        .group-table td {
+            color:#e2e8f0;
+            padding:10px;
+            text-align:center;
+        }
+
+        .team-col {
+            text-align:left;
+            font-weight:600;
+        }
+
+        .rank-highlight {
+            background:#0f172a;
+            border-left:4px solid #38bdf8;
+        }
+
+        .rank-first {
+            background:#1e293b;
+            border-left:4px solid #facc15;
+        }
+
+        .match-day {
+            margin-bottom:50px;
+        }
+
+        .match-day-title {
+            font-size:28px;
+            font-weight:800;
+            margin-bottom:18px;
+            color:#60a5fa;
+        }
+
+        .match-grid {
+            display:grid;
+            grid-template-columns:1fr 1fr 1fr;
+            gap:18px;
+        }
+
+        .match-card {
+            background:#020617;
+            border-radius:14px;
+            padding:18px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            box-shadow:0 10px 22px rgba(0,0,0,0.35);
+        }
+
+        .team {
+            font-size:18px;
+            font-weight:700;
+            width:35%;
+            color:#e2e8f0;
+        }
+
+        .team-left {
+            text-align:left;
+        }
+
+        .team-right {
+            text-align:right;
+        }
+
+        .match-score {
+            font-size:26px;
+            font-weight:900;
+            color:#facc15;
+        }
+
+        @media (max-width:900px) {
+
+        .match-grid {
+            grid-template-columns:1fr;
+        }
+
+        .group-container {
+            grid-template-columns:1fr;
+        }
+
+        }
+
+        </style>
+
+        
+        <div class="group-container">
+            
+            <div class="group-table">
+
+                <div class="group-title">A组</div>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th class="team-head">队伍</th>
+                            <th>大局胜负</th>
+                            <th>小局胜</th>
+                            <th>小局负</th>
+                            <th>净胜</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        
+                <tr class="rank-first">
+                    <td>1</td>
+                    <td class="team-col">
+                        快乐星球V12
+                        
+                    </td>
+                    <td>3-0</td>
+                    <td>6</td>
+                    <td>0</td>
+                    <td>6</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>2</td>
+                    <td class="team-col">
+                        潇甜甜
+                        
+                    </td>
+                    <td>3-0</td>
+                    <td>6</td>
+                    <td>1</td>
+                    <td>5</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>3</td>
+                    <td class="team-col">
+                        大董无敌
+                        
+                    </td>
+                    <td>3-1</td>
+                    <td>7</td>
+                    <td>3</td>
+                    <td>4</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>4</td>
+                    <td class="team-col">
+                        IKUN
+                        
+                    </td>
+                    <td>2-2</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>-1</td>
+                </tr>
+                
+                <tr class="">
+                    <td>5</td>
+                    <td class="team-col">
+                        无敌暴龙战士
+                        <span class="team-badge">最快完赛</span>
+                    </td>
+                    <td>1-4</td>
+                    <td>4</td>
+                    <td>8</td>
+                    <td>-4</td>
+                </tr>
+                
+                <tr class="">
+                    <td>6</td>
+                    <td class="team-col">
+                        哈基米
+                        
+                    </td>
+                    <td>0-5</td>
+                    <td>0</td>
+                    <td>10</td>
+                    <td>-10</td>
+                </tr>
+                
+                    </tbody>
+
+                </table>
+
+            </div>
+            
+            <div class="group-table">
+
+                <div class="group-title">B组</div>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th class="team-head">队伍</th>
+                            <th>大局胜负</th>
+                            <th>小局胜</th>
+                            <th>小局负</th>
+                            <th>净胜</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        
+                <tr class="rank-first">
+                    <td>1</td>
+                    <td class="team-col">
+                        V超甜
+                        
+                    </td>
+                    <td>4-0</td>
+                    <td>8</td>
+                    <td>1</td>
+                    <td>7</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>2</td>
+                    <td class="team-col">
+                        就折水平
+                        
+                    </td>
+                    <td>3-0</td>
+                    <td>6</td>
+                    <td>1</td>
+                    <td>5</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>3</td>
+                    <td class="team-col">
+                        外卖到了先别开团
+                        
+                    </td>
+                    <td>2-2</td>
+                    <td>4</td>
+                    <td>4</td>
+                    <td>0</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>4</td>
+                    <td class="team-col">
+                        WBD
+                        
+                    </td>
+                    <td>1-3</td>
+                    <td>4</td>
+                    <td>6</td>
+                    <td>-2</td>
+                </tr>
+                
+                <tr class="">
+                    <td>5</td>
+                    <td class="team-col">
+                        斯巴达
+                        
+                    </td>
+                    <td>0-2</td>
+                    <td>0</td>
+                    <td>4</td>
+                    <td>-4</td>
+                </tr>
+                
+                <tr class="">
+                    <td>6</td>
+                    <td class="team-col">
+                        GSN
+                        
+                    </td>
+                    <td>0-3</td>
+                    <td>0</td>
+                    <td>6</td>
+                    <td>-6</td>
+                </tr>
+                
+                    </tbody>
+
+                </table>
+
+            </div>
+            
+            <div class="group-table">
+
+                <div class="group-title">C组</div>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th class="team-head">队伍</th>
+                            <th>大局胜负</th>
+                            <th>小局胜</th>
+                            <th>小局负</th>
+                            <th>净胜</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        
+                <tr class="rank-first">
+                    <td>1</td>
+                    <td class="team-col">
+                        飞行淇
+                        
+                    </td>
+                    <td>4-0</td>
+                    <td>8</td>
+                    <td>0</td>
+                    <td>8</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>2</td>
+                    <td class="team-col">
+                        牢王来了
+                        
+                    </td>
+                    <td>4-1</td>
+                    <td>8</td>
+                    <td>2</td>
+                    <td>6</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>3</td>
+                    <td class="team-col">
+                        皮划艇
+                        
+                    </td>
+                    <td>2-2</td>
+                    <td>4</td>
+                    <td>4</td>
+                    <td>0</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>4</td>
+                    <td class="team-col">
+                        ikunの四区兄弟
+                        
+                    </td>
+                    <td>2-2</td>
+                    <td>4</td>
+                    <td>5</td>
+                    <td>-1</td>
+                </tr>
+                
+                <tr class="">
+                    <td>5</td>
+                    <td class="team-col">
+                        AUV
+                        
+                    </td>
+                    <td>1-3</td>
+                    <td>2</td>
+                    <td>6</td>
+                    <td>-4</td>
+                </tr>
+                
+                <tr class="">
+                    <td>6</td>
+                    <td class="team-col">
+                        麒麟队
+                        <span class="team-badge">最快完赛</span>
+                    </td>
+                    <td>0-5</td>
+                    <td>1</td>
+                    <td>10</td>
+                    <td>-9</td>
+                </tr>
+                
+                    </tbody>
+
+                </table>
+
+            </div>
+            
+            <div class="group-table">
+
+                <div class="group-title">D组</div>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>排名</th>
+                            <th class="team-head">队伍</th>
+                            <th>大局胜负</th>
+                            <th>小局胜</th>
+                            <th>小局负</th>
+                            <th>净胜</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        
+                <tr class="rank-first">
+                    <td>1</td>
+                    <td class="team-col">
+                        陀螺队
+                        
+                    </td>
+                    <td>4-1</td>
+                    <td>9</td>
+                    <td>4</td>
+                    <td>5</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>2</td>
+                    <td class="team-col">
+                        咕咕嘎嘎
+                        
+                    </td>
+                    <td>3-0</td>
+                    <td>6</td>
+                    <td>1</td>
+                    <td>5</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>3</td>
+                    <td class="team-col">
+                        卡了电竞魔王护
+                        
+                    </td>
+                    <td>2-2</td>
+                    <td>5</td>
+                    <td>5</td>
+                    <td>0</td>
+                </tr>
+                
+                <tr class="rank-highlight">
+                    <td>4</td>
+                    <td class="team-col">
+                        全妹班
+                        
+                    </td>
+                    <td>0-2</td>
+                    <td>1</td>
+                    <td>4</td>
+                    <td>-3</td>
+                </tr>
+                
+                <tr class="">
+                    <td>5</td>
+                    <td class="team-col">
+                        神将杯冠军
+                        
+                    </td>
+                    <td>0-2</td>
+                    <td>1</td>
+                    <td>4</td>
+                    <td>-3</td>
+                </tr>
+                
+                <tr class="">
+                    <td>6</td>
+                    <td class="team-col">
+                        拉扯一下别急
+                        
+                    </td>
+                    <td>0-2</td>
+                    <td>0</td>
+                    <td>4</td>
+                    <td>-4</td>
+                </tr>
+                
+                    </tbody>
+
+                </table>
+
+            </div>
+            
+        </div>
+        
+
+        
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月27日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        皮划艇
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        AUV
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        卡了电竞魔王护
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        拉扯一下别急
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        咕咕嘎嘎
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        陀螺队
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        飞行淇
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        牢王来了
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        外卖到了先别开团
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        WBD
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月25日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        飞行淇
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        AUV
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        快乐星球V12
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        IKUN
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        外卖到了先别开团
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        GSN
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        卡了电竞魔王护
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        神将杯冠军
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        牢王来了
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        ikunの四区兄弟
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        大董无敌
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        哈基米
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月24日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        就折水平
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        斯巴达
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        陀螺队
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        神将杯冠军
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月23日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        V超甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        外卖到了先别开团
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        牢王来了
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        皮划艇
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月22日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        牢王来了
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        AUV
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        就折水平
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        外卖到了先别开团
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        陀螺队
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        全妹班
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        咕咕嘎嘎
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        全妹班
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        IKUN
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        无敌暴龙战士
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        陀螺队
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        拉扯一下别急
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月21日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        V超甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        斯巴达
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        潇甜甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        哈基米
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        快乐星球V12
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        无敌暴龙战士
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月20日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        无敌暴龙战士
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        哈基米
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        陀螺队
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        卡了电竞魔王护
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        ikunの四区兄弟
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        皮划艇
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        WBD
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        GSN
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        IKUN
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        哈基米
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月18日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        咕咕嘎嘎
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        卡了电竞魔王护
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        AUV
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        麒麟队
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        就折水平
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        WBD
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        快乐星球V12
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        哈基米
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        飞行淇
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        麒麟队
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月16日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        ikunの四区兄弟
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        麒麟队
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        潇甜甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        无敌暴龙战士
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月13日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        牢王来了
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        麒麟队
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        大董无敌
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        IKUN
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        V超甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        WBD
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月12日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        皮划艇
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        麒麟队
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+            <div class="match-day">
+
+                <div class="match-day-title">
+                    2026年3月11日
+                </div>
+
+                <div class="match-grid">
+                    
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        V超甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        GSN
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        飞行淇
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>0</span>
+                    </div>
+
+                    <div class="team team-right">
+                        ikunの四区兄弟
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        大董无敌
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        无敌暴龙战士
+                    </div>
+
+                </div>
+                
+                <div class="match-card">
+
+                    <div class="team team-left">
+                        潇甜甜
+                    </div>
+
+                    <div class="match-score">
+                        <span>2</span>
+                        :
+                        <span>1</span>
+                    </div>
+
+                    <div class="team team-right">
+                        大董无敌
+                    </div>
+
+                </div>
+                
+                </div>
+
+            </div>
+            
+
+          
+    
+</div>  
+
+<script>  
+  const dtOpts = {  
+    pageLength: 25,  
+    order: [],  
+    autoWidth: false,  
+    language: {  
+      search: "搜索：",  
+      lengthMenu: "每页 _MENU_ 行",  
+      info: "第 _START_ 到 _END_ 行，共 _TOTAL_ 行",  
+      infoEmpty: "无数据",  
+      zeroRecords: "无匹配结果",  
+      paginate: { first: "首页", last: "末页", next: "下一页", previous: "上一页" }  
+    }  
+  };  
+
+  $(function() {  
+    $('table.data-table').each(function() {  
+      $(this).DataTable(dtOpts);  
+    });  
+    document.getElementById('laneTabs')?.addEventListener('shown.bs.tab', function () {  
+      $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();  
+    });  
+  });  
+</script>  
+</body>  
+</html>  

@@ -98,6 +98,11 @@ LANE_MAP = {
 }
 LANES = ["上", "野", "中", "下", "辅"]
 
+# 赛程划分日期（YYYYMMDD）
+# 小组赛：match_date < GROUP_KNOCKOUT_CUTOFF
+# 淘汰赛：match_date > GROUP_KNOCKOUT_CUTOFF
+GROUP_KNOCKOUT_CUTOFF = "20260402"
+
 
 def _safe_float(x, default=None):
     try:
@@ -803,6 +808,7 @@ BASE_HTML = r"""
     </button>  
     <div class="collapse navbar-collapse" id="topNav">  
       <div class="navbar-nav ms-auto">  
+        <a class="nav-link {% if active=='knockout' %}active{% endif %}" href="{{ link_knockout }}">淘汰赛</a>
         <a class="nav-link {% if active=='daily' %}active{% endif %}" href="{{ link_index }}">小组赛</a>
         <a class="nav-link {% if active=='players' %}active{% endif %}" href="{{ link_players }}">选手数据</a>
         <a class="nav-link {% if active=='champions' %}active{% endif %}" href="{{ link_champions }}">英雄数据</a>  
@@ -829,6 +835,7 @@ BASE_HTML = r"""
           <div class="meta">英雄映射：<code>{{ champion_json_path }}</code></div>  
         </div>  
         <div class="col-lg-4 text-lg-end">  
+            <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_knockout }}">淘汰赛</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_index }}">小组赛</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_players }}">选手榜</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_champions }}">英雄榜</a>  
@@ -1041,6 +1048,8 @@ class StaticSiteBuilder:
             return
 
         df = self.team_match_stats.copy()
+        # 小组赛：取 2026-04-02 之前的数据
+        df = df[df["match_date"].fillna("").astype(str) < GROUP_KNOCKOUT_CUTOFF]
 
         df["date"] = df["match_date"]
         df["team"] = df["team_name"]
@@ -1467,6 +1476,199 @@ class StaticSiteBuilder:
         self.write_file("index.html", html)
         self.write_file("daily.html", html)
 
+    def build_knockout_results(self):
+
+        if self.team_match_stats.empty:
+            return
+
+        df = self.team_match_stats.copy()
+        # 淘汰赛：取 2026-04-02 之后的数据
+        df = df[df["match_date"].fillna("").astype(str) > GROUP_KNOCKOUT_CUTOFF]
+
+        df["date"] = df["match_date"]
+        df["team"] = df["team_name"]
+        df["opponent"] = df["opponent"]
+        df["win"] = df["win"].astype(int)
+
+        # ✅ 铭牌配置（只影响积分榜）
+        team_badges = {
+            "无敌暴龙战士": "最快完赛",
+            "麒麟队": "最快完赛"
+        }
+
+        rows = []
+
+        for match_id, g in df.groupby("match_id"):
+
+            if len(g) != 2:
+                continue
+
+            t1 = g.iloc[0]
+            t2 = g.iloc[1]
+
+            date = t1["date"]
+            teamA = str(t1["team"])
+            teamB = str(t2["team"])
+
+            winner = teamA if t1["win"] else teamB
+
+            pair = tuple(sorted([teamA, teamB]))
+
+            rows.append({
+                "date": date,
+                "teamA": pair[0],
+                "teamB": pair[1],
+                "winner": winner
+            })
+
+        rdf = pd.DataFrame(rows)
+
+        if rdf.empty:
+            # 生成空页面，保留导航
+            content = """
+            <div class=\"empty-state\">当前没有淘汰赛数据，或数据尚未达到 2026-04-03 之后。</div>
+            """
+            html = self.render_page(
+                current_dir="",
+                title="淘汰赛",
+                active="knockout",
+                page_desc="淘汰赛阶段比分统计",
+                summary_cards=[
+                    {"label": "总对局", "value": 0},
+                    {"label": "参赛记录", "value": 0},
+                    {"label": "比赛日", "value": 0},
+                ],
+                tabs=False,
+                content=content
+            )
+            self.write_file("knockout.html", html)
+            return
+
+        result_rows = []
+
+        for (date, teamA, teamB), g in rdf.groupby(["date", "teamA", "teamB"]):
+
+            winsA = (g["winner"] == teamA).sum()
+            winsB = (g["winner"] == teamB).sum()
+
+            if winsA >= winsB:
+                left = teamA
+                right = teamB
+                left_wins = winsA
+                right_wins = winsB
+            else:
+                left = teamB
+                right = teamA
+                left_wins = winsB
+                right_wins = winsA
+
+            result_rows.append({
+                "date": date,
+                "left": left,
+                "right": right,
+                "left_wins": left_wins,
+                "right_wins": right_wins
+            })
+
+        result_df = pd.DataFrame(result_rows)
+
+        result_df["date_sort"] = pd.to_numeric(result_df["date"], errors="coerce")
+        result_df = result_df.sort_values("date_sort", ascending=False)
+        result_df = result_df.drop(columns=["date_sort"])
+
+        # 加载手动比赛结果修正
+        manual_results_file = "manual_match_results.json"
+        if os.path.exists(manual_results_file):
+            with open(manual_results_file, "r", encoding="utf-8") as f:
+                manual_results = json.load(f)
+            for key, manual in manual_results.items():
+                parts = key.split("_", 2)
+                if len(parts) == 3:
+                    m_date, m_left, m_right = parts
+                    mask = (result_df["date"] == m_date) & (result_df["left"] == m_left) & (
+                                result_df["right"] == m_right)
+                    if mask.any():
+                        result_df.loc[mask, "left_wins"] = manual["left_wins"]
+                        result_df.loc[mask, "right_wins"] = manual["right_wins"]
+
+        group_html = """
+        <div class=\"knockout-image\" style=\"text-align:center;margin:0 auto 30px;\">
+            <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
+        </div>
+        """
+
+        day_blocks = []
+
+        for date, g in result_df.groupby("date", sort=False):
+
+            matches_html = ""
+            date_cn = format_date_cn(date)
+
+            for _, r in g.iterrows():
+                matches_html += f"""
+                <div class=\"match-card\"> 
+
+                    <div class=\"team team-left\"> 
+                        {html_escape(r["left"])}
+                    </div>
+
+                    <div class=\"match-score\"> 
+                        <span>{r["left_wins"]}</span>
+                        :
+                        <span>{r["right_wins"]}</span>
+                    </div>
+
+                    <div class=\"team team-right\"> 
+                        {html_escape(r["right"])}
+                    </div>
+
+                </div>
+                """
+
+            day_blocks.append(f"""
+            <div class=\"match-day\"> 
+
+                <div class=\"match-day-title\"> 
+                    {date_cn}
+                </div>
+
+                <div class=\"match-grid\"> 
+                    {matches_html}
+                </div>
+
+            </div>
+            """
+            )
+
+        content = f"""
+
+        <style>
+        .knockout-image {{text-align:center;margin-bottom:30px;}}
+        .knockout-image img {{max-width:100%;height:auto;}}
+        </style>
+
+        {group_html}
+
+        {''.join(day_blocks)}
+
+        """
+
+        html = self.render_page(
+            current_dir="",
+            title="淘汰赛",
+            active="knockout",
+            page_desc="淘汰赛比分统计，用于淘汰赛阶段回顾。",
+            summary_cards=[
+                {"label": "比赛日", "value": result_df["date"].nunique()},
+                {"label": "系列赛", "value": len(result_df)},
+                {"label": "总对局", "value": self.total_matches},
+            ],
+            tabs=False,
+            content=content
+        )
+
+        self.write_file("knockout.html", html)
+
     def write_file(self, rel_path: str, content: str):
         fp = os.path.join(self.out_dir, *rel_path.split("/"))
         os.makedirs(os.path.dirname(fp), exist_ok=True)
@@ -1503,6 +1705,7 @@ class StaticSiteBuilder:
             content=content,
             tabs_title=tabs_title,
             tabs_subtitle=tabs_subtitle,
+            link_knockout=rel_href(current_dir, "knockout.html"),
             link_index=rel_href(current_dir, "index.html"),
             link_players=rel_href(current_dir, "players.html"),
             link_champions=rel_href(current_dir, "champions.html"),
@@ -2281,7 +2484,8 @@ class StaticSiteBuilder:
         self.build_bans_page()
         self.build_match_detail_pages()
 
-        # 最后生成每日战绩（覆盖 index.html）
+        # 最后生成淘汰赛和小组赛战绩页面
+        self.build_knockout_results()
         self.build_daily_results()
 
 
