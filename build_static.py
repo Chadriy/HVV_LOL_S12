@@ -1489,13 +1489,6 @@ class StaticSiteBuilder:
         df["team"] = df["team_name"]
         df["opponent"] = df["opponent"]
         df["win"] = df["win"].astype(int)
-
-        # ✅ 铭牌配置（只影响积分榜）
-        team_badges = {
-            "无敌暴龙战士": "最快完赛",
-            "麒麟队": "最快完赛"
-        }
-
         rows = []
 
         for match_id, g in df.groupby("match_id"):
@@ -1527,7 +1520,7 @@ class StaticSiteBuilder:
             # 生成空页面，保留导航，并展示淘汰赛图（即使无数据）
             content = """
             <div class=\"knockout-image\" style=\"text-align:center;margin:0 auto 30px;\">
-                <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
+                <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:70%;height:auto;\" />
             </div>
             <div class=\"empty-state\">当前没有淘汰赛数据，或数据尚未达到 2026-04-02 之后。</div>
             """
