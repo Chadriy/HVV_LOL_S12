@@ -1482,8 +1482,8 @@ class StaticSiteBuilder:
             return
 
         df = self.team_match_stats.copy()
-        # 淘汰赛：取 2026-04-02 之后的数据
-        df = df[df["match_date"].fillna("").astype(str) > GROUP_KNOCKOUT_CUTOFF]
+        # 淘汰赛：取 2026-04-02 及之后的数据（含当日）
+        df = df[df["match_date"].fillna("").astype(str) >= GROUP_KNOCKOUT_CUTOFF]
 
         df["date"] = df["match_date"]
         df["team"] = df["team_name"]
@@ -1524,9 +1524,12 @@ class StaticSiteBuilder:
         rdf = pd.DataFrame(rows)
 
         if rdf.empty:
-            # 生成空页面，保留导航
+            # 生成空页面，保留导航，并展示淘汰赛图（即使无数据）
             content = """
-            <div class=\"empty-state\">当前没有淘汰赛数据，或数据尚未达到 2026-04-03 之后。</div>
+            <div class=\"knockout-image\" style=\"text-align:center;margin:0 auto 30px;\">
+                <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
+            </div>
+            <div class=\"empty-state\">当前没有淘汰赛数据，或数据尚未达到 2026-04-02 之后。</div>
             """
             html = self.render_page(
                 current_dir="",
