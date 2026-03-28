@@ -1520,7 +1520,7 @@ class StaticSiteBuilder:
             # 生成空页面，保留导航，并展示淘汰赛图（即使无数据）
             content = """
             <div class=\"knockout-image\" style=\"text-align:center;margin:0 auto 30px;\">
-                <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:70%;height:auto;\" />
+                <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
             </div>
             <div class=\"empty-state\">当前没有淘汰赛数据，或数据尚未达到 2026-04-02 之后。</div>
             """
@@ -1738,14 +1738,25 @@ class StaticSiteBuilder:
         counts = {}
         pdf = self.players_df.copy()
 
-        # 选手铭牌配置（只影响显示）
+        # 选手铭牌配置（只影响显示），支持字符串或列表
         player_badges = {
             # 示例：添加指定选手的铭牌
             "我不是针对谁#13834": "第一个五杀",
             "爱吃花椒的冰冰#86168": "第二个五杀",
             "风华是一指流砂啊#14008": "腕豪王",
-            "求你不要再狗叫了#69859": "野犬剑魔",
+            "求你不要再狗叫了#69859": ["S12华一上", "野犬剑魔"],
+            "雨盼着虹#95892": ["华一劫"],
         }
+
+        def render_player_badges(player_name):
+            badges = player_badges.get(player_name)
+            if not badges:
+                return ""
+            if isinstance(badges, (list, tuple)):
+                return "".join(
+                    f'<span class="player-badge">{html_escape(str(b))}</span>' for b in badges
+                )
+            return f'<span class="player-badge">{html_escape(str(badges))}</span>'
 
         if not pdf.empty:
             pdf["team"] = pdf["player"].map(self.player_team_map)
@@ -1753,7 +1764,7 @@ class StaticSiteBuilder:
         if not pdf.empty:
             # 修改 player_link 以包含铭牌
             pdf["player_link"] = pdf.apply(
-                lambda r: f'<a href="{player_path(r["player"])}">{html_escape(r["player"])}{f'<span class="player-badge">{html_escape(player_badges[r["player"]])}</span>' if r["player"] in player_badges else ""}</a>',
+                lambda r: f'<a href="{player_path(r["player"])}">{html_escape(r["player"])}{render_player_badges(r["player"])}</a>',
                 axis=1
             )
         if not pdf.empty:
