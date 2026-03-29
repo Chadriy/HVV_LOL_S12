@@ -1059,6 +1059,7 @@ class StaticSiteBuilder:
         # ✅ 铭牌配置（只影响积分榜）
         team_badges = {
             "无敌暴龙战士": "最快完赛",
+            "V超甜": "最快完赛",
             "麒麟队": "最快完赛",
             "陀螺队": "最快完赛"
         }
@@ -1747,6 +1748,7 @@ class StaticSiteBuilder:
             "求你不要再狗叫了#69859": ["S12华一上", "野犬剑魔"],
             "雨盼着虹#95892": ["华一劫"],
             "7053#00520": ["S11华一上"],
+            "Anger丶Mid#33540": ["第三个五杀"]
         }
 
         def render_player_badges(player_name):
