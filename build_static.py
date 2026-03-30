@@ -427,7 +427,29 @@ def agg_players(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["avg_score", "avg_kda", "avg_kp", "avg_gold_diff", "avg_level_diff", "avg_damage_conversion_rate"]:
         out[c] = out[c].round(2)
 
-    return out.sort_values(["lane", "winrate", "avg_score", "games"], ascending=[True, False, False, False])
+    # 新增选手排名（赛程大于等于4场在前，赛程小于4场在后；同池按平均评分、胜率排序）
+    def rank_pool(g: pd.DataFrame) -> pd.DataFrame:
+        pool_a = g[g["games"] >= 4].copy()
+        pool_b = g[g["games"] < 4].copy()
+
+        pool_a = pool_a.sort_values(["avg_score", "winrate"], ascending=[False, False])
+        pool_b = pool_b.sort_values(["avg_score", "winrate"], ascending=[False, False])
+
+        stacked = pd.concat([pool_a, pool_b], ignore_index=True)
+        stacked["rank_no"] = range(1, len(stacked) + 1)
+
+        medal_map = {1: "🥇", 2: "🥈", 3: "🥉"}
+        stacked["rank_label"] = stacked["rank_no"].apply(
+            lambda x: f"{medal_map[x]}{x}" if x in medal_map else str(x)
+        )
+        return stacked
+
+    ranked_frames = []
+    for lane, lane_df in out.groupby("lane", sort=False):
+        ranked_frames.append(rank_pool(lane_df))
+
+    out = pd.concat(ranked_frames, ignore_index=True) if ranked_frames else out
+    return out.sort_values(["lane", "rank_no"], ascending=[True, True])
 
 
 def agg_champions(df: pd.DataFrame) -> pd.DataFrame:
@@ -789,6 +811,7 @@ BASE_HTML = r"""
     a{text-decoration:none;} a:hover{text-decoration:underline;}  
     .result-badge{display:inline-block;padding:.28rem .7rem;border-radius:999px;font-size:.84rem;font-weight:700;}  
     .badge-win{color:#166534;background:#dcfce7;} .badge-lose{color:#991b1b;background:#fee2e2;}  
+    .rank-badge{display:inline-block;padding:.4rem .8rem;border-radius:12px;font-size:1.1rem;font-weight:900;text-align:center;min-width:3rem;background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);color:#92400e;border:2px solid #d97706;box-shadow:0 4px 12px rgba(245,158,11,.3);}
     .team-panel{border:1px solid #edf2f7;border-radius:18px;background:#fff;padding:18px;height:100%;}  
     .team-title{font-size:1.05rem;font-weight:800;margin-bottom:4px;}  
     .team-sub{color:var(--muted);font-size:.9rem;margin-bottom:14px;}  
@@ -1783,6 +1806,7 @@ class StaticSiteBuilder:
             tables[lane] = df_to_table(
                 dff,
                 columns=[
+                    "rank_label",
                     "player_link",
                     "team_link",
                     "rank",
@@ -1799,6 +1823,7 @@ class StaticSiteBuilder:
                 col_rename={
                     "player_link": "选手",
                     "team_link": "队伍",
+                    "rank_label": "排名",
                     "rank": "历史最高段位",
                     "games": "总场次",
                     "wins": "胜场",
