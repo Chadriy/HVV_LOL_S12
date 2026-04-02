@@ -825,14 +825,14 @@ BASE_HTML = r"""
 <body>  
 <nav class="navbar navbar-expand-lg navbar-dark">  
   <div class="container-fluid px-4">  
-    <a class="navbar-brand" href="{{ link_index }}">HVV杯英雄联盟S12赛季比赛数据总览</a>  
+    <a class="navbar-brand" href="{{ link_daily }}">HVV杯英雄联盟S12赛季比赛数据总览</a>  
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">  
       <span class="navbar-toggler-icon"></span>  
     </button>  
     <div class="collapse navbar-collapse" id="topNav">  
       <div class="navbar-nav ms-auto">  
         <a class="nav-link {% if active=='knockout' %}active{% endif %}" href="{{ link_knockout }}">淘汰赛</a>
-        <a class="nav-link {% if active=='daily' %}active{% endif %}" href="{{ link_index }}">小组赛</a>
+        <a class="nav-link {% if active=='daily' %}active{% endif %}" href="{{ link_daily }}">小组赛</a>
         <a class="nav-link {% if active=='players' %}active{% endif %}" href="{{ link_players }}">选手数据</a>
         <a class="nav-link {% if active=='champions' %}active{% endif %}" href="{{ link_champions }}">英雄数据</a>  
         <a class="nav-link {% if active=='teams' %}active{% endif %}" href="{{ link_teams }}">队伍榜</a>  
@@ -859,7 +859,7 @@ BASE_HTML = r"""
         </div>  
         <div class="col-lg-4 text-lg-end">  
             <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_knockout }}">淘汰赛</a>  
-          <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_index }}">小组赛</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_daily }}">小组赛</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_players }}">选手榜</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_champions }}">英雄榜</a>  
           <a class="btn btn-light btn-sm me-2 mb-2" href="{{ link_teams }}">队伍榜</a>  
@@ -1500,7 +1500,6 @@ class StaticSiteBuilder:
             content=content
         )
 
-        self.write_file("index.html", html)
         self.write_file("daily.html", html)
 
     def build_knockout_results(self):
@@ -1565,6 +1564,7 @@ class StaticSiteBuilder:
                 content=content
             )
             self.write_file("knockout.html", html)
+            self.write_file("index.html", html)
             return
 
         result_rows = []
@@ -1691,6 +1691,7 @@ class StaticSiteBuilder:
         )
 
         self.write_file("knockout.html", html)
+        self.write_file("index.html", html)
 
     def write_file(self, rel_path: str, content: str):
         fp = os.path.join(self.out_dir, *rel_path.split("/"))
@@ -1729,7 +1730,7 @@ class StaticSiteBuilder:
             tabs_title=tabs_title,
             tabs_subtitle=tabs_subtitle,
             link_knockout=rel_href(current_dir, "knockout.html"),
-            link_index=rel_href(current_dir, "index.html"),
+            link_daily=rel_href(current_dir, "daily.html"),
             link_players=rel_href(current_dir, "players.html"),
             link_champions=rel_href(current_dir, "champions.html"),
             link_teams=rel_href(current_dir, "teams.html"),
@@ -1878,7 +1879,6 @@ class StaticSiteBuilder:
         html = html.replace('</style>', player_badge_css + '\n</style>')
 
         self.write_file("players.html", html)
-        self.write_file("index.html", html)
 
     def build_player_detail_pages(self):
         current_dir = "player"
