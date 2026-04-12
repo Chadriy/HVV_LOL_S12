@@ -404,7 +404,9 @@ def make_ban_stats(ban_df: pd.DataFrame, total_matches: int) -> pd.DataFrame:
     return out.sort_values(["banrate", "ban_matches", "bans"], ascending=[False, False, False])
 
 
-def agg_players(df: pd.DataFrame) -> pd.DataFrame:
+def agg_players(df: pd.DataFrame, low_rank_teams=None) -> pd.DataFrame:
+    if low_rank_teams is None:
+        low_rank_teams = []
     if df.empty:
         return df
 
@@ -428,14 +430,31 @@ def agg_players(df: pd.DataFrame) -> pd.DataFrame:
         out[c] = out[c].round(2)
 
     # 新增选手排名（赛程大于等于4场在前，赛程小于4场在后；同池按平均评分、胜率排序）
-    def rank_pool(g: pd.DataFrame) -> pd.DataFrame:
-        pool_a = g[g["games"] >= 4].copy()
-        pool_b = g[g["games"] < 4].copy()
+    def rank_pool(g: pd.DataFrame, low_rank_teams) -> pd.DataFrame:
+        # 分离低排位队伍和正常队伍
+        low_team_df = g[g["team_name"].isin(low_rank_teams)].copy()
+        normal_df = g[~g["team_name"].isin(low_rank_teams)].copy()
 
-        pool_a = pool_a.sort_values(["avg_score", "winrate"], ascending=[False, False])
-        pool_b = pool_b.sort_values(["avg_score", "winrate"], ascending=[False, False])
+        # 对正常队伍排序
+        pool_a_normal = normal_df[normal_df["games"] >= 4].copy()
+        pool_b_normal = normal_df[normal_df["games"] < 4].copy()
 
-        stacked = pd.concat([pool_a, pool_b], ignore_index=True)
+        pool_a_normal = pool_a_normal.sort_values(["avg_score", "winrate"], ascending=[False, False])
+        pool_b_normal = pool_b_normal.sort_values(["avg_score", "winrate"], ascending=[False, False])
+
+        normal_stacked = pd.concat([pool_a_normal, pool_b_normal], ignore_index=True)
+
+        # 对低排位队伍排序
+        pool_a_low = low_team_df[low_team_df["games"] >= 4].copy()
+        pool_b_low = low_team_df[low_team_df["games"] < 4].copy()
+
+        pool_a_low = pool_a_low.sort_values(["avg_score", "winrate"], ascending=[False, False])
+        pool_b_low = pool_b_low.sort_values(["avg_score", "winrate"], ascending=[False, False])
+
+        low_stacked = pd.concat([pool_a_low, pool_b_low], ignore_index=True)
+
+        # 合并，正常在前，低排位在后
+        stacked = pd.concat([normal_stacked, low_stacked], ignore_index=True)
         stacked["rank_no"] = range(1, len(stacked) + 1)
 
         medal_map = {1: "🥇", 2: "🥈", 3: "🥉"}
@@ -446,7 +465,7 @@ def agg_players(df: pd.DataFrame) -> pd.DataFrame:
 
     ranked_frames = []
     for lane, lane_df in out.groupby("lane", sort=False):
-        ranked_frames.append(rank_pool(lane_df))
+        ranked_frames.append(rank_pool(lane_df, low_rank_teams))
 
     out = pd.concat(ranked_frames, ignore_index=True) if ranked_frames else out
     return out.sort_values(["lane", "rank_no"], ascending=[True, True])
@@ -1011,6 +1030,11 @@ class StaticSiteBuilder:
         )
 
         # -----------------------------
+        # 低排位队伍列表（这些队伍的选手默认排位靠后，避免影响排行榜）
+        # -----------------------------
+        self.low_rank_teams = ["无敌暴龙战士", "哈基米", "斯巴达", "GSN", "AUV", "麒麟队", "神将杯冠军", "拉扯一下别急", "卡了电竞魔王护"]
+
+        # -----------------------------
         # 查询选手段位
         # -----------------------------
         self.rank_cache = load_rank_cache()
@@ -1031,10 +1055,14 @@ class StaticSiteBuilder:
             self.rank_cache[player] = rank
 
         for p in players:
-            self.player_rank_map[p] = self.rank_cache.get(p, "-")
+            team = self.player_team_map.get(p)
+            if team in self.low_rank_teams and self.rank_cache.get(p, "-") == "-":
+                self.player_rank_map[p] = "青铜"
+            else:
+                self.player_rank_map[p] = self.rank_cache.get(p, "-")
 
         save_rank_cache(self.rank_cache)
-        self.players_df = agg_players(self.df_detail)
+        self.players_df = agg_players(self.df_detail, low_rank_teams=self.low_rank_teams)
         self.champs_df = agg_champions(self.df_detail)
         self.team_match_stats = build_team_match_stats(self.df_detail)
         self.teams_df = agg_teams(self.team_match_stats)
