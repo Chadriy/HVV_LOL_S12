@@ -1574,7 +1574,7 @@ class StaticSiteBuilder:
             # 生成空页面，保留导航，并展示淘汰赛图（即使无数据）
             content = """
             <div class=\"knockout-image\" style=\"text-align:center;margin:0 auto 30px;\">
-                <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
+                <img src=\"淘汰赛.jpg\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
             </div>
             <div class=\"empty-state\">当前没有淘汰赛数据，或数据尚未达到 2026-04-02 之后。</div>
             """
@@ -1644,7 +1644,7 @@ class StaticSiteBuilder:
 
         group_html = """
         <div class=\"knockout-image\" style=\"text-align:center;margin:0 auto 30px;\">
-            <img src=\"淘汰赛.png\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
+            <img src=\"淘汰赛.jpg\" alt=\"淘汰赛\" style=\"max-width:100%;height:auto;\" />
         </div>
         """
 
