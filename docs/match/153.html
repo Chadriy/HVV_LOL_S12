@@ -1,0 +1,383 @@
+  
+<!doctype html>  
+<html lang="zh-CN">  
+<head>  
+  <meta charset="utf-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1">  
+  <title>对局详情：153</title>  
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">  
+  <link href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet">  
+
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.8/js/jquery.dataTables.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.8/js/dataTables.bootstrap5.min.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>  
+
+  <style>  
+    :root{  
+      --bg1:#f8fafc; --bg2:#eef2ff; --card:#ffffff; --text:#0f172a;  
+      --muted:#64748b; --primary:#4f46e5; --shadow:0 10px 30px rgba(15,23,42,.08);  
+      --radius:18px;  
+    }  
+    body{min-height:100vh;background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 100%);color:var(--text);}  
+    .navbar{background:rgba(15,23,42,.92)!important;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(2,6,23,.18);}  
+    .navbar-brand{font-weight:700;}  
+    .page-shell{padding-top:28px;padding-bottom:40px;}  
+    .hero-card{background:linear-gradient(135deg,#111827 0%,#312e81 100%);color:#fff;border:none;border-radius:24px;box-shadow:0 18px 40px rgba(31,41,55,.25);overflow:hidden;}  
+    .hero-card .meta{color:rgba(255,255,255,.78);font-size:.95rem;}  
+    .hero-badge{display:inline-flex;align-items:center;padding:.4rem .75rem;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);font-size:.86rem;margin-right:.5rem;margin-bottom:.5rem;}  
+    .app-card{border:none;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}  
+    .section-title{font-size:1.15rem;font-weight:700;color:var(--text);}  
+    .section-subtitle{margin-top:.35rem;color:var(--muted);font-size:.92rem;}  
+    .stat-card{background:var(--card);border:1px solid #edf2f7;border-radius:18px;padding:18px 18px 16px;box-shadow:0 8px 24px rgba(15,23,42,.05);}  
+    .stat-label{color:var(--muted);font-size:.92rem;margin-bottom:.45rem;}  
+    .stat-value{font-size:1.6rem;font-weight:800;line-height:1.2;color:var(--text);}  
+    .stat-sub{margin-top:.35rem;color:var(--muted);font-size:.85rem;}  
+    .nav-pills.lane-pills{gap:.65rem;flex-wrap:wrap;}  
+    .nav-pills.lane-pills .nav-link{border:none;border-radius:999px;padding:.65rem 1rem;font-weight:600;color:#334155;background:#f8fafc;box-shadow:inset 0 0 0 1px #e2e8f0;}  
+    .nav-pills.lane-pills .nav-link.active{background:var(--primary);color:#fff;box-shadow:none;}  
+    .lane-badge{margin-left:.45rem;border-radius:999px;padding:.15rem .5rem;font-size:.78rem;background:rgba(255,255,255,.2);}  
+    .nav-pills.lane-pills .nav-link:not(.active) .lane-badge{background:#e2e8f0;color:#334155;}  
+    .table-wrap{overflow-x:auto;border:1px solid #edf2f7;border-radius:16px;background:#fff;}  
+    table.dataTable{margin-top:0!important;margin-bottom:0!important;}  
+    table.dataTable thead th{background:#f8fafc;color:#334155;font-weight:700;border-bottom:1px solid #e5e7eb!important;white-space:nowrap;}  
+    table.dataTable tbody td{white-space:nowrap;vertical-align:middle;}  
+    .dataTables_wrapper .dataTables_filter input,.dataTables_wrapper .dataTables_length select{border-radius:10px!important;border:1px solid #dbe2ea!important;box-shadow:none!important;}  
+    .dataTables_wrapper .dataTables_filter,.dataTables_wrapper .dataTables_length{margin-bottom:14px;}  
+    a{text-decoration:none;} a:hover{text-decoration:underline;}  
+    .result-badge{display:inline-block;padding:.28rem .7rem;border-radius:999px;font-size:.84rem;font-weight:700;}  
+    .badge-win{color:#166534;background:#dcfce7;} .badge-lose{color:#991b1b;background:#fee2e2;}  
+    .rank-badge{display:inline-block;padding:.4rem .8rem;border-radius:12px;font-size:1.1rem;font-weight:900;text-align:center;min-width:3rem;background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);color:#92400e;border:2px solid #d97706;box-shadow:0 4px 12px rgba(245,158,11,.3);}
+    .team-panel{border:1px solid #edf2f7;border-radius:18px;background:#fff;padding:18px;height:100%;}  
+    .team-title{font-size:1.05rem;font-weight:800;margin-bottom:4px;}  
+    .team-sub{color:var(--muted);font-size:.9rem;margin-bottom:14px;}  
+    .empty-state{padding:32px 16px;text-align:center;color:var(--muted);border:1px dashed #dbe2ea;border-radius:16px;background:#fbfdff;}  
+    .btn-soft{background:#fff;border:1px solid #dbe2ea;color:#334155;border-radius:12px;padding:.55rem .9rem;font-weight:600;}  
+    .btn-soft:hover{background:#f8fafc;color:#0f172a;}  
+    code{background:#eef2ff;color:#3730a3;padding:.15rem .35rem;border-radius:8px;}  
+  </style>  
+</head>  
+
+<body>  
+<nav class="navbar navbar-expand-lg navbar-dark">  
+  <div class="container-fluid px-4">  
+    <a class="navbar-brand" href="../daily.html">HVV杯英雄联盟S12赛季比赛数据总览</a>  
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">  
+      <span class="navbar-toggler-icon"></span>  
+    </button>  
+    <div class="collapse navbar-collapse" id="topNav">  
+      <div class="navbar-nav ms-auto">  
+        <a class="nav-link " href="../knockout.html">淘汰赛</a>
+        <a class="nav-link " href="../daily.html">小组赛</a>
+        <a class="nav-link active" href="../players.html">选手数据</a>
+        <a class="nav-link " href="../champions.html">英雄数据</a>  
+        <a class="nav-link " href="../teams.html">队伍榜</a>  
+        <a class="nav-link " href="../bans.html">Ban榜</a>  
+      </div>  
+    </div>  
+  </div>  
+</nav>  
+
+<div class="container-fluid page-shell px-3 px-lg-4">  
+  <div class="card hero-card mb-4">  
+    <div class="card-body p-4 p-lg-5">  
+      <div class="row g-4 align-items-center">  
+        <div class="col-lg-8">  
+          <div class="d-flex flex-wrap mb-2">  
+            <span class="hero-badge">总对局：154</span>  
+            <span class="hero-badge">数据源：./matches</span>  
+          </div>  
+          <h1 class="h3 mb-2">对局详情：153</h1>  
+            
+            <div class="meta mb-3">单局全员详情按两队分开展示，阅读更直观。</div>  
+            
+          <div class="meta">英雄映射：<code>champion.json</code></div>  
+        </div>  
+        <div class="col-lg-4 text-lg-end">  
+            <a class="btn btn-light btn-sm me-2 mb-2" href="../knockout.html">淘汰赛</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="../daily.html">小组赛</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="../players.html">选手榜</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="../champions.html">英雄榜</a>  
+          <a class="btn btn-light btn-sm me-2 mb-2" href="../teams.html">队伍榜</a>  
+          <a class="btn btn-light btn-sm mb-2" href="../bans.html">Ban榜</a>  
+        </div>  
+      </div>  
+    </div>  
+  </div>  
+
+    
+    <div class="row g-3 mb-4">  
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">对局ID</div>  
+            <div class="stat-value">153</div>  
+              
+          </div>  
+        </div>  
+          
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">日期</div>  
+            <div class="stat-value">20260417</div>  
+              
+          </div>  
+        </div>  
+          
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">场次</div>  
+            <div class="stat-value">2</div>  
+              
+          </div>  
+        </div>  
+          
+        <div class="col-6 col-xl-3">  
+          <div class="stat-card h-100">  
+            <div class="stat-label">参赛人数</div>  
+            <div class="stat-value">10</div>  
+              
+          </div>  
+        </div>  
+        </div>  
+    
+
+    
+      
+    <section class="card app-card mb-4">  
+      <div class="card-header bg-white border-0 p-4 pb-0">  
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">  
+          <div>  
+            <div class="section-title">对局详情：153</div>  
+            <div class="section-subtitle">日期：20260417 ｜ 场次：2 ｜ 对阵：大董无敌 vs 飞行淇</div>  
+          </div>  
+          <div><a class="btn btn-soft" href="../players.html">返回选手榜</a></div>  
+        </div>  
+      </div>  
+      <div class="card-body p-4">  
+        <div class="row g-4">
+                <div class="col-12 col-xl-6">
+                  <div class="team-panel">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <div>
+                        <div class="team-title">大董无敌</div>
+                        <div class="team-sub">队伍编号：100</div>
+                      </div>
+                      <div><span class="result-badge badge-win">胜</span></div>
+                    </div>
+                    <div class="table-wrap"><table class="dataframe table table-hover align-middle data-table mb-0" id="tbl_match_team_100">
+  <thead>
+    <tr style="text-align: right;">
+      <th>分路</th>
+      <th>选手</th>
+      <th>英雄</th>
+      <th>胜负</th>
+      <th>评分</th>
+      <th>K/D/A</th>
+      <th>参团率(%)</th>
+      <th>经济</th>
+      <th>等级</th>
+      <th>对位经济差</th>
+      <th>对位等级差</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>上</td>
+      <td><a href="../player/7053_00520.html">7053#00520</a></td>
+      <td><a href="../champion/72.html">上古领主</a></td>
+      <td><span class="result-badge badge-win">胜</span></td>
+      <td>9.0</td>
+      <td>5/3/14</td>
+      <td>39.0</td>
+      <td>11349</td>
+      <td>17</td>
+      <td>505.0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <td>野</td>
+      <td><a href="../player/Exremey_76890.html">Exremey#76890</a></td>
+      <td><a href="../champion/164.html">青钢影</a></td>
+      <td><span class="result-badge badge-win">胜</span></td>
+      <td>14.4</td>
+      <td>14/2/11</td>
+      <td>51.0</td>
+      <td>15498</td>
+      <td>18</td>
+      <td>6621.0</td>
+      <td>5.0</td>
+    </tr>
+    <tr>
+      <td>中</td>
+      <td><a href="../player/August丶眷念_46800.html">August丶眷念#46800</a></td>
+      <td><a href="../champion/84.html">离群之刺</a></td>
+      <td><span class="result-badge badge-win">胜</span></td>
+      <td>6.0</td>
+      <td>6/5/10</td>
+      <td>33.0</td>
+      <td>10463</td>
+      <td>14</td>
+      <td>1882.0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>下</td>
+      <td><a href="../player/游离在山间的风_12840.html">游离在山间的风#12840</a></td>
+      <td><a href="../champion/236.html">圣枪游侠</a></td>
+      <td><span class="result-badge badge-win">胜</span></td>
+      <td>12.7</td>
+      <td>19/4/12</td>
+      <td>63.0</td>
+      <td>18351</td>
+      <td>15</td>
+      <td>6718.0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <td>辅</td>
+      <td><a href="../player/爱的日记_23091.html">爱的日记#23091</a></td>
+      <td><a href="../champion/555.html">血港鬼影</a></td>
+      <td><span class="result-badge badge-win">胜</span></td>
+      <td>4.5</td>
+      <td>5/5/13</td>
+      <td>37.0</td>
+      <td>9115</td>
+      <td>13</td>
+      <td>1046.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table></div>
+                  </div>
+                </div>
+                
+                <div class="col-12 col-xl-6">
+                  <div class="team-panel">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <div>
+                        <div class="team-title">飞行淇</div>
+                        <div class="team-sub">队伍编号：200</div>
+                      </div>
+                      <div><span class="result-badge badge-lose">负</span></div>
+                    </div>
+                    <div class="table-wrap"><table class="dataframe table table-hover align-middle data-table mb-0" id="tbl_match_team_200">
+  <thead>
+    <tr style="text-align: right;">
+      <th>分路</th>
+      <th>选手</th>
+      <th>英雄</th>
+      <th>胜负</th>
+      <th>评分</th>
+      <th>K/D/A</th>
+      <th>参团率(%)</th>
+      <th>经济</th>
+      <th>等级</th>
+      <th>对位经济差</th>
+      <th>对位等级差</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>上</td>
+      <td><a href="../player/求你不要再狗叫了_69859.html">求你不要再狗叫了#69859</a></td>
+      <td><a href="../champion/58.html">荒漠屠夫</a></td>
+      <td><span class="result-badge badge-lose">负</span></td>
+      <td>6.6</td>
+      <td>5/9/3</td>
+      <td>42.0</td>
+      <td>10844</td>
+      <td>15</td>
+      <td>-505.0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <td>野</td>
+      <td><a href="../player/开心心_28133.html">开心心#28133</a></td>
+      <td><a href="../champion/64.html">盲僧</a></td>
+      <td><span class="result-badge badge-lose">负</span></td>
+      <td>5.7</td>
+      <td>2/9/8</td>
+      <td>53.0</td>
+      <td>8877</td>
+      <td>13</td>
+      <td>-6621.0</td>
+      <td>-5.0</td>
+    </tr>
+    <tr>
+      <td>中</td>
+      <td><a href="../player/有我在_64137.html">有我在#64137</a></td>
+      <td><a href="../champion/893.html">双界灵兔</a></td>
+      <td><span class="result-badge badge-lose">负</span></td>
+      <td>6.2</td>
+      <td>4/7/5</td>
+      <td>47.0</td>
+      <td>8581</td>
+      <td>13</td>
+      <td>-1882.0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <td>下</td>
+      <td><a href="../player/诀别书_69371.html">诀别书#69371</a></td>
+      <td><a href="../champion/67.html">暗夜猎手</a></td>
+      <td><span class="result-badge badge-lose">负</span></td>
+      <td>5.4</td>
+      <td>4/11/3</td>
+      <td>37.0</td>
+      <td>11633</td>
+      <td>14</td>
+      <td>-6718.0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <td>辅</td>
+      <td><a href="../player/观复知常_0520.html">观复知常#0520</a></td>
+      <td><a href="../champion/517.html">解脱者</a></td>
+      <td><span class="result-badge badge-lose">负</span></td>
+      <td>3.8</td>
+      <td>4/13/4</td>
+      <td>42.0</td>
+      <td>8069</td>
+      <td>13</td>
+      <td>-1046.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table></div>
+                  </div>
+                </div>
+                </div>  
+      </div>  
+    </section>  
+      
+    
+</div>  
+
+<script>  
+  const dtOpts = {  
+    pageLength: 25,  
+    order: [],  
+    autoWidth: false,  
+    language: {  
+      search: "搜索：",  
+      lengthMenu: "每页 _MENU_ 行",  
+      info: "第 _START_ 到 _END_ 行，共 _TOTAL_ 行",  
+      infoEmpty: "无数据",  
+      zeroRecords: "无匹配结果",  
+      paginate: { first: "首页", last: "末页", next: "下一页", previous: "上一页" }  
+    }  
+  };  
+
+  $(function() {  
+    $('table.data-table').each(function() {  
+      $(this).DataTable(dtOpts);  
+    });  
+    document.getElementById('laneTabs')?.addEventListener('shown.bs.tab', function () {  
+      $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();  
+    });  
+  });  
+</script>  
+</body>  
+</html>  
